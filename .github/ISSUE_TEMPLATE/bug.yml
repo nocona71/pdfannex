@@ -1,0 +1,17 @@
+name: Bug report
+description: Report incorrect behavior in pdfannex.
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: versions
+    attributes:
+      label: Versions
+      description: LaTeX engine/version, pdfannex version, pdfpages version.

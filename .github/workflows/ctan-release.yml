@@ -1,0 +1,78 @@
+name: Build CTAN release archive
+
+on:
+  workflow_call:
+    inputs:
+      release_tag:
+        description: Release tag to build (for example pdfannex-v1.0.0)
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing release tag to build (for example pdfannex-v1.0.0)
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  ctan-archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout release source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag }}
+
+      - name: Install TeX tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            latexmk make poppler-utils shellcheck texlive-extra-utils texlive-latex-base \
+            texlive-latex-extra texlive-luatex texlive-xetex
+
+      - name: Read release version
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          case "$RELEASE_TAG" in
+            pdfannex-v*) version="${RELEASE_TAG#pdfannex-v}" ;;
+            *)
+              echo "Unexpected release tag: $RELEASE_TAG" >&2
+              exit 1
+              ;;
+          esac
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Release tag does not contain a semantic version: $RELEASE_TAG" >&2
+            exit 1
+          fi
+          package_version="$(sed -E 's/[[:space:]]+# x-release-please-version$//' VERSION)"
+          if [[ "$package_version" != "$version" ]]; then
+            echo "VERSION does not match release tag $RELEASE_TAG" >&2
+            exit 1
+          fi
+          echo "VERSION=$version" >>"$GITHUB_ENV"
+
+      - name: Check release source
+        run: make check
+
+      - name: Build package documentation
+        run: make doc
+
+      - name: Build and version CTAN archive
+        run: |
+          make package
+          cp build/pdfannex-ctan.zip \
+            "build/pdfannex-ctan-v${VERSION}.zip"
+
+      - name: Attach archive to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          gh release upload "$RELEASE_TAG" \
+            "build/pdfannex-ctan-v${VERSION}.zip" \
+            --clobber

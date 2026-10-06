@@ -6,3 +6,5 @@
 - [ ] 4 CTAN packaging
 - [ ] 5 Phases B/C deferred
 - [ ] 6 Copilot `.instructions.md` files
+
+- [x] Infra adoption: devcontainer, CI, release-please, l3build skeleton (`make check` passes; decision 0004)

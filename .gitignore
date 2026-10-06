@@ -8,3 +8,6 @@
 *.synctex.gz
 build/
 .DS_Store
+*.xdv
+.env
+__pycache__/

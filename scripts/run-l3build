@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -ne 1 || ( "$1" != doc && "$1" != ctan ) ]]; then
+  echo "usage: run-l3build <doc|ctan>" >&2
+  exit 2
+fi
+
+target="$1"
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+root="$(cd -- "$script_dir/.." && pwd)"
+workdir="$(mktemp -d)"
+trap 'rm -rf "$workdir"' EXIT
+project="$workdir/project"
+mkdir -p "$project"
+
+for item in \
+  build.lua tex doc testfiles README.md CHANGELOG.md LICENSE; do
+  cp -R "$root/$item" "$project/"
+done
+
+(
+  cd "$project"
+  l3build "$target"
+)
+
+if [[ "$target" == doc ]]; then
+  mkdir -p "$root/build/doc"
+  cp -f "$project/doc/pdfannex-doc.pdf" \
+    "$root/build/doc/pdfannex-doc.pdf"
+else
+  mkdir -p "$root/build/distrib/tds"
+  cp -f "$project/pdfannex-ctan.zip" "$root/build/pdfannex-ctan.zip"
+  cp -f "$project/build/distrib/tds/pdfannex.tds.zip" \
+    "$root/build/distrib/tds/pdfannex.tds.zip"
+fi
