@@ -1,9 +1,10 @@
 # adapter-example: template for pdfannex resolvers
 
-A complete, dependency-free example of a pdfannex source adapter (Resolver
+A complete, self-contained example of a pdfannex source adapter (Resolver
 Protocol 1). Copy this directory as the start of your own adapter (Paperless,
 SharePoint, ...). Nothing here depends on the rest of the pdfannex repository;
-it needs `texlua` (TeX Live) and `curl`, plus Python 3 for the mock server and tests.
+runtime use needs `texlua` (TeX Live) and `curl`; Python 3 is needed only for
+the mock server and tests.
 
 | File | Purpose |
 |---|---|
@@ -30,16 +31,18 @@ default 30). The token is handed to curl through a private temporary config
 file, so it never appears in the process list. HTTP errors map to protocol
 errors: 401 `authentication-required`, 403 `permission-denied`, 404
 `resource-not-found`, anything else `temporarily-unavailable`.
+If curl is missing, the resolver returns `temporarily-unavailable` with an
+install/PATH hint; `describe` itself does not require curl.
 
 Try it: `python3 docstore_server.py ROOT --token SECRET` serves
 `ROOT/<id>/<n>.pdf`; then export the two variables above.
 
 | Aspect | Where to look |
 |---|---|
-| Source options (`?rev=`) and `unsupported-source-option` | `lookup` |
+| Source options (`?rev=`) and `unsupported-source-option` | `parse_source` |
 | Pinning a floating request to a concrete revision | `resolve_one` (`resolved`) |
 | Update and tamper detection | `status_one` |
-| Refusing symlinks and non-PDF content | `check_revision` |
+| Refusing non-PDF content | `remote_revision` |
 | Configuration, curl call, error mapping | `fetch` |
 | Protocol plumbing: `describe`, errors, protocol version | bottom of the file |
 
@@ -63,14 +66,15 @@ Try it: `python3 docstore_server.py ROOT --token SECRET` serves
    document.tex` accepts it.
 
 The package needs no knowledge of the adapter: any scheme name works with
-`\NewAnnexSource`. Adapters are arbitrary code, so the CLI runs them only from
-`prepare` and `update`, never while compiling. Secrets belong in the environment,
-never in the lock, the requests file or the document.
+`\NewAnnexSource`. Adapters are arbitrary code, so the CLI runs them from
+`prepare`, `update` and `status`, never while compiling. Secrets belong in the
+environment, never in the lock, the requests file or the document.
 
 ## Build your own adapter
 
 1. Copy this directory and rename the executable to `pdfannex-resolver-SCHEME`.
-2. Replace `SCHEME` and the body of `lookup`; keep the protocol plumbing.
+2. Replace `SCHEME`, `parse_source`, `fetch` and the service calls; keep the
+   protocol plumbing.
 3. Adapt `test_docstore.py`. The module tests cover what an adapter must get
    right before any integration test: invalid sources and options, a deleted
    document, server outages, bad credentials, redirects, timeouts, tampered content, garbage metadata, batches

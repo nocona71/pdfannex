@@ -15,7 +15,7 @@ project="$workdir/project"
 mkdir -p "$project"
 
 for item in \
-  build.lua tex doc testfiles README.md CHANGELOG.md LICENSE; do
+  build.lua tex cli doc testfiles README.md CHANGELOG.md LICENSE; do
   cp -R "$root/$item" "$project/"
 done
 

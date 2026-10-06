@@ -1,0 +1,57 @@
+.TH PDFANNEX 1
+.SH NAME
+pdfannex \- prepare and verify reproducible PDF annex inputs
+.SH SYNOPSIS
+.B pdfannex
+.I command
+[
+.I document.tex
+]
+.SH DESCRIPTION
+.B pdfannex
+records requested annex sources, resolves external sources, and stores their
+PDF bytes by SHA-256 so later builds can use the same inputs.
+.SH COMMANDS
+.TP
+.B init
+Create an empty
+.B pdfannex.lock
+in the current directory. This opts the LaTeX package in to recording source
+requests.
+.TP
+.B prepare document.tex
+Resolve requested sources that are not already locked, then update the
+resolution map. Does not contact resolvers if all sources are already locked.
+.TP
+.B update document.tex
+Explicitly re-resolve all requested sources and advance the lock.
+.TP
+.B status document.tex
+Report whether locked sources changed upstream. Resolver-backed sources may
+contact their services.
+.TP
+.B verify document.tex
+Check the lock, local artifact store, and resolution map without contacting
+resolvers.
+.SH RESOLVERS
+Plain file paths are handled by
+.B pdfannex
+itself. Other source schemes require an executable named
+.BR pdfannex-resolver-SCHEME
+on
+.BR PATH .
+Resolvers run only for explicit CLI commands, never during LaTeX compilation.
+Individual adapters may require external programs; consult their
+documentation.
+.SH REQUIREMENTS
+The command is a TeXLua script and requires
+.BR texlua ,
+provided by TeX Live. On systems that do not add TeX Live scripts to
+.BR PATH ,
+invoke it with
+.B texlua
+and its installed script path, or add the scripts directory to
+.BR PATH .
+.SH SEE ALSO
+.BR pdflatex (1),
+.BR texlua (1)

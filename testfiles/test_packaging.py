@@ -42,7 +42,7 @@ class Packaging(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             project = Path(d) / "project"
             project.mkdir()
-            for name in ("build.lua", "tex", "doc", "testfiles",
+            for name in ("build.lua", "tex", "doc", "testfiles", "cli",
                          "README.md", "CHANGELOG.md", "LICENSE", "VERSION"):
                 src = ROOT / name
                 if src.is_dir():
@@ -55,11 +55,17 @@ class Packaging(unittest.TestCase):
             names = set(zipfile.ZipFile(project / "pdfannex-ctan.zip").namelist())
             for n in ("pdfannex/pdfannex.sty", "pdfannex/README.md",
                       "pdfannex/CHANGELOG.md", "pdfannex/LICENSE",
-                      "pdfannex/pdfannex-doc.tex", "pdfannex/pdfannex-doc.pdf"):
+                      "pdfannex/pdfannex-doc.tex", "pdfannex/pdfannex-doc.pdf",
+                      "pdfannex/scripts/pdfannex/pdfannex",
+                      "pdfannex/scripts/pdfannex/pdfannex-lib.lua",
+                      "pdfannex/pdfannex.1"):
                 self.assertIn(n, names)
             tds = set(zipfile.ZipFile(
                 project / "build/distrib/tds/pdfannex.tds.zip").namelist())
             self.assertIn("tex/latex/pdfannex/pdfannex.sty", tds)
+            self.assertIn("scripts/pdfannex/pdfannex", tds)
+            self.assertIn("scripts/pdfannex/pdfannex-lib.lua", tds)
+            self.assertIn("doc/man/man1/pdfannex.1", tds)
             self.assertIn("doc/latex/pdfannex/pdfannex-doc.pdf", tds)
 
 

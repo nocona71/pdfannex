@@ -18,5 +18,6 @@ Add a new file whenever a design or process decision is made. Never silently cha
 | 0011 | [End-to-end test of the CTAN archive](0011-ctan-archive-e2e-test.md) | accepted |
 | 0012 | [Per-file n-up (`nup` key)](0012-nup-per-file.md) | accepted |
 | 0013 | [File resolver is the first Resolver Protocol 1 adapter](0013-file-resolver-first-adapter.md) | partly superseded by 0015 |
-| 0014 | [Example docstore resolver and `\NewAnnexSource`](0014-example-docstore-resolver.md) | accepted |
+| 0014 | [Example docstore resolver and `\NewAnnexSource`](0014-example-docstore-resolver.md) | partly superseded by 0016 |
 | 0015 | [CLI handles plain files itself](0015-cli-handles-plain-files.md) | accepted |
+| 0016 | [Package adapters for CTAN distribution](0016-package-adapters-for-ctan.md) | accepted |

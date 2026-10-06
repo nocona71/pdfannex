@@ -17,3 +17,9 @@ textfiles = {
   "CHANGELOG.md",
   "LICENSE"
 }
+
+tdsdirs = {
+  ["cli"] = "scripts/pdfannex"
+}
+exefiles = { "pdfannex" }
+scriptmanfiles = { "pdfannex.1" }

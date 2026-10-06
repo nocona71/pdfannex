@@ -4,7 +4,16 @@
 -- resolution map. Resolvers (Resolver Protocol 1) only acquire PDFs.
 local script_dir = (arg[0] or ""):match("^(.*)/[^/]*$") or "."
 if script_dir:sub(1, 1) ~= "/" then script_dir = lfs.currentdir() .. "/" .. script_dir end
-package.path = script_dir .. "/?.lua;" .. package.path
+local support = script_dir
+local file = io.open(support .. "/pdfannex-lib.lua", "r")
+if file then
+  file:close()
+else
+  kpse.set_program_name("latex")
+  local found = kpse.find_file("pdfannex-lib.lua", "texmfscripts")
+  if found then support = found:match("^(.*)/[^/]+$") or support end
+end
+package.path = support .. "/?.lua;" .. package.path
 local lib = require("pdfannex-lib")
 
 local VERSION = "0.1.0"

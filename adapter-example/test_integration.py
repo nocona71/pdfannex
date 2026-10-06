@@ -146,6 +146,21 @@ class PlainAndDocstore(unittest.TestCase):
         self.assertIn("temporarily-unavailable", run.stderr)
         self.assertEqual((self.d / "pdfannex.lock").read_text(), lock)
 
+    def test_missing_curl_recommends_installing_it_and_updating_path(self):
+        self.build()
+        bin_dir = self.d / "without-curl"
+        bin_dir.mkdir()
+        for name in ("texlua",):
+            (bin_dir / name).symlink_to(shutil.which(name))
+        (bin_dir / "pdfannex-resolver-docstore").symlink_to(HERE / "pdfannex-resolver-docstore")
+        (bin_dir / "adapter-lib.lua").symlink_to(HERE / "adapter-lib.lua")
+        self.env["PATH"] = str(bin_dir)
+
+        run = self.run_cli("prepare", "host.tex")
+        self.assertNotEqual(run.returncode, 0)
+        self.assertIn("install curl", run.stderr)
+        self.assertIn("PATH", run.stderr)
+
     def test_unknown_option_and_missing_document(self):
         for src in ("pdfannex://docstore/memo?x=1", "pdfannex://docstore/none"):
             (self.d / "host.pdfannex-requests").write_text(src.encode().hex().upper() + "\n")

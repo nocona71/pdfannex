@@ -26,7 +26,8 @@ from conformance import conform  # noqa: E402
 from docstore_server import DocstoreServer  # noqa: E402
 
 ADAPTER = HERE / "pdfannex-resolver-docstore"
-NEEDS = shutil.which("texlua") and shutil.which("curl")
+TEXLUA = shutil.which("texlua")
+NEEDS = TEXLUA and shutil.which("curl")
 PDF = b"%PDF-1.4\n% fake but PDF-shaped\n"
 TOKEN = "s3cret-token"
 DOC = "pdfannex://docstore/memo"
@@ -59,7 +60,7 @@ class DocstoreAdapter(unittest.TestCase):
 
     def run_adapter(self, payload, raw=None, env=None):
         data = raw if raw is not None else json.dumps(payload)
-        return subprocess.run(["texlua", str(ADAPTER)], input=data, cwd=self.d,
+        return subprocess.run([TEXLUA, str(ADAPTER)], input=data, cwd=self.d,
                               env=env or self.env, capture_output=True, text=True)
 
     def call(self, op, *reqs, env=None, **extra):
@@ -269,6 +270,27 @@ class DocstoreAdapter(unittest.TestCase):
         os.remove(r["artifact"]["path"])
         self.one("status", DOC, resolved=DOC + "?rev=2")
         self.assertEqual(before, sorted((p, p.stat().st_mtime_ns) for p in self.d.rglob("*")))
+
+
+@unittest.skipUnless(TEXLUA, "texlua missing")
+class MissingCurlDiagnostic(unittest.TestCase):
+    def test_missing_curl_has_install_hint_and_describe_still_works(self):
+        with tempfile.TemporaryDirectory() as empty_path:
+            env = {"PATH": empty_path, "PDFANNEX_DOCSTORE_URL": "http://example.invalid"}
+            request = {"protocolVersion": 1, "operation": "resolve",
+                       "requests": [{"id": "1", "source": DOC}]}
+            proc = subprocess.run([TEXLUA, str(ADAPTER)], input=json.dumps(request),
+                                  cwd=empty_path, env=env, capture_output=True, text=True)
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            result = json.loads(proc.stdout)["results"][0]
+            self.assertEqual(result["error"]["code"], "temporarily-unavailable")
+            self.assertIn("install curl", result["error"]["message"])
+            self.assertIn("PATH", result["error"]["message"])
+
+            proc = subprocess.run([TEXLUA, str(ADAPTER)], input='{"operation":"describe"}',
+                                  cwd=empty_path, env=env, capture_output=True, text=True)
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertEqual(json.loads(proc.stdout)["schemes"], ["docstore"])
 
 
 if __name__ == "__main__":

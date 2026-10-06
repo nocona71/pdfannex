@@ -47,10 +47,40 @@ scheme name; the optional command-line tool finds the resolver program.
 
 \verb|\pdfannexsetup{|\emph{options}\verb|}| sets defaults for later annexes.
 
-
 Prints the list of annexes. \verb|\annexref{|\emph{label}\verb|}| and
 \verb|\annexpageref{|\emph{label}\verb|}| give a link to the annex and its
 first page.
+
+\section{Reproducible inputs}
+
+The optional \texttt{pdfannex} command records and locks annex sources so
+subsequent builds use the same PDF bytes. It is installed with the package;
+it requires \texttt{texlua} (provided by TeX Live).
+
+\begin{verbatim}
+pdfannex init
+pdflatex document.tex
+pdfannex prepare document.tex
+pdfannex status document.tex
+pdfannex update document.tex
+pdfannex verify document.tex
+\end{verbatim}
+
+Run \texttt{init} once in the project directory. This creates
+\texttt{pdfannex.lock}, which opts in to recording requests. Build once before
+\texttt{prepare} so the package can record each annex source. Do not use
+\texttt{-halt-on-error} for that first build when the document contains
+\texttt{pdfannex://} sources: their unresolved-source errors would stop the run
+before later requests are recorded.
+
+\texttt{prepare} resolves and locks new sources; \texttt{update} explicitly
+re-resolves them; \texttt{status} checks resolver-backed sources for changes;
+and \texttt{verify} checks the lock and local artifact store without contacting
+resolvers. Plain file paths are handled by the CLI itself. Other sources need
+an executable named \texttt{pdfannex-resolver-SCHEME} on \texttt{PATH}. The
+docstore example is a separate adapter and requires \texttt{curl} when it
+contacts its HTTP service. Locked rebuilds use the stored PDFs and do not need
+the resolver or curl.
 
 \section{Page size and scaling}
 

@@ -14,7 +14,16 @@
 -- service API in `remote`; everything else is protocol plumbing. Hashing and
 -- storage belong to the pdfannex CLI.
 local script_dir = (arg[0] or ""):match("^(.*)/[^/]*$") or "."
-package.path = script_dir .. "/?.lua;" .. package.path
+local support = script_dir
+local file = io.open(support .. "/adapter-lib.lua", "r")
+if file then
+  file:close()
+else
+  kpse.set_program_name("latex")
+  local found = kpse.find_file("adapter-lib.lua", "texmfscripts")
+  if found then support = found:match("^(.*)/[^/]+$") or support end
+end
+package.path = support .. "/?.lua;" .. package.path
 local lib = require("adapter-lib")
 
 local VERSION = "0.2.0"
@@ -34,11 +43,28 @@ local function status_error(status)
   return "temporarily-unavailable", "unexpected HTTP status " .. tostring(status)
 end
 
+local curl_available
+local function has_curl()
+  if curl_available ~= nil then return curl_available end
+  local pipe = io.popen("curl --version 2>&1", "r")
+  if not pipe then
+    curl_available = false
+  else
+    local output = pipe:read("a")
+    curl_available = pipe:close() and output:match("^curl") ~= nil
+  end
+  return curl_available
+end
+
 -- GET <base>/<path> with curl. The token goes through a private temporary curl
 -- config, so it never appears in the process list. Returns the response body
 -- (a string, or the downloaded file name when `to_file` is set), or
 -- nil, code, message.
 local function fetch(path, to_file)
+  if not has_curl() then
+    return nil, "temporarily-unavailable",
+      "curl is required by the docstore resolver but was not found on PATH; install curl and ensure it can be run as 'curl'"
+  end
   local base = os.getenv("PDFANNEX_DOCSTORE_URL")
   if not base or base == "" then
     return nil, "temporarily-unavailable", "PDFANNEX_DOCSTORE_URL is not set"
