@@ -20,6 +20,7 @@
 
 \tl_new:N \l__pdfannex_label_tl
 \tl_new:N \l__pdfannex_pages_tl
+\tl_new:N \l__pdfannex_nup_tl
 \tl_new:N \l__pdfannex_layout_tl
 \tl_new:N \l__pdfannex_pagestyle_tl
 \tl_new:N \l__pdfannex_title_tl
@@ -45,6 +46,7 @@
     pagination .tl_set:N = \l__pdfannex_pagination_tl ,
     label      .tl_set:N = \l__pdfannex_label_tl ,
     pages      .tl_set:N = \l__pdfannex_pages_tl ,
+    nup        .tl_set:N = \l__pdfannex_nup_tl ,
     margin       .dim_set:N = \l__pdfannex_margin_dim ,
     footer-space .dim_set:N = \l__pdfannex_footer_dim ,
     bookmark   .bool_set:N = \l__pdfannex_bookmark_bool ,
@@ -70,6 +72,7 @@
     \group_begin:
       \tl_clear:N \l__pdfannex_label_tl
       \tl_set:Nn \l__pdfannex_pages_tl { - }
+      \tl_clear:N \l__pdfannex_nup_tl
       \bool_set_false:N \l__pdfannex_frame_bool
       \dim_zero:N \l__pdfannex_margin_dim
       \dim_zero:N \l__pdfannex_footer_dim
@@ -96,6 +99,7 @@
       {
         \__pdfannex_layout_opts: ,
         pages = \l__pdfannex_pages_tl ,
+        \tl_if_empty:NF \l__pdfannex_nup_tl { nup = \l__pdfannex_nup_tl , }
         pagecommand = { \exp_not:N \__pdfannex_page_hook: } ,
       }
       { #1 }

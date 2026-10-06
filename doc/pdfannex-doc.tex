@@ -59,6 +59,7 @@ supported in this version. Pages in the same PDF are fitted independently.
 \begin{description}
 \item[\texttt{label}] Label for \verb|\annexref|.
 \item[\texttt{pages}] Page range passed to \texttt{pdfpages} (default \texttt{-}).
+\item[\texttt{nup}] Several source pages per sheet, passed to \texttt{pdfpages} (for example \texttt{2x1}); the annex page number and \verb|\annexpageref| refer to its first sheet. Combining different files on one sheet is not supported.
 \item[\texttt{layout}] \texttt{fullpage} (default), \texttt{footer-safe}
   (scaled down to leave room for the host footer) or \texttt{framed}.
 \item[\texttt{margin}, \texttt{footer-space}] Custom margin and footer area;
