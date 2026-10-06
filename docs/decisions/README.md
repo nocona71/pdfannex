@@ -11,3 +11,4 @@ Add a new file whenever a design or process decision is made. Never silently cha
 | 0004 | [Dev/CI/release infra from paperlessngx-latex](0004-dev-ci-release-infra.md) | accepted |
 | 0005 | [Devcontainer needs texlive-fonts-recommended](0005-devcontainer-fonts-recommended.md) | accepted |
 | 0006 | [`pagecommand` plus first-page flag](0006-pagecommand-with-first-page-flag.md) | accepted (supersedes 0002) |
+| 0007 | [List of annexes built from `.aux`](0007-aux-based-list-of-annexes.md) | accepted |

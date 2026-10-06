@@ -1,0 +1,18 @@
+\documentclass{article}
+\usepackage{pdfannex}
+\input{regression-test}
+\begin{document}
+\includeannex[label=one]{a1.pdf}{First}
+\includeannex[label=three,margin=10mm,footer-space=15mm]{a3.pdf}{Third}
+\START
+\ExplSyntaxOn
+\tl_set:Nx \l_tmpa_tl
+  {
+    annexes=\arabic{annex}~
+    one=\__pdfannex_ref_num:n{one}/\__pdfannex_ref_page:n{one}~
+    three=\__pdfannex_ref_num:n{three}/\__pdfannex_ref_page:n{three}~
+    loa=\tl_to_str:N \g__pdfannex_loa_tl
+  }
+\typeout{\l_tmpa_tl}
+\ExplSyntaxOff
+\end{document}

@@ -29,6 +29,8 @@
 \bool_new:N \l__pdfannex_bookmark_bool
 \bool_new:N \l__pdfannex_list_bool
 \bool_new:N \g__pdfannex_first_bool
+\dim_new:N \l__pdfannex_margin_dim
+\dim_new:N \l__pdfannex_footer_dim
 
 \tl_set:Nn \l__pdfannex_annexname_tl { Annex }
 \tl_set:Nn \l__pdfannex_heading_tl { Annexes }
@@ -42,6 +44,8 @@
     pagination .tl_set:N = \l__pdfannex_pagination_tl ,
     label      .tl_set:N = \l__pdfannex_label_tl ,
     pages      .tl_set:N = \l__pdfannex_pages_tl ,
+    margin       .dim_set:N = \l__pdfannex_margin_dim ,
+    footer-space .dim_set:N = \l__pdfannex_footer_dim ,
     bookmark   .bool_set:N = \l__pdfannex_bookmark_bool ,
     list       .bool_set:N = \l__pdfannex_list_bool ,
     bookmark   .default:n = true ,
@@ -58,6 +62,8 @@
     \group_begin:
       \tl_clear:N \l__pdfannex_label_tl
       \tl_set:Nn \l__pdfannex_pages_tl { - }
+      \dim_zero:N \l__pdfannex_margin_dim
+      \dim_zero:N \l__pdfannex_footer_dim
       \bool_set_true:N \l__pdfannex_bookmark_bool
       \bool_set_true:N \l__pdfannex_list_bool
       \keys_set:nn { pdfannex } { #1 }
@@ -85,6 +91,32 @@
 
 % Layout -> pdfpages options (approximate fractions of the sheet).
 \cs_new:Npn \__pdfannex_layout_opts:
+  {
+    \bool_lazy_and:nnTF
+      { \dim_compare_p:nNn { \l__pdfannex_margin_dim } = { \c_zero_dim } }
+      { \dim_compare_p:nNn { \l__pdfannex_footer_dim } = { \c_zero_dim } }
+      { \__pdfannex_layout_preset: }
+      { \__pdfannex_layout_custom: }
+  }
+% margin/footer-space are relative to the host paper size and applied as a
+% uniform scale; the footer area is cleared by shifting the content up.
+\cs_new:Npn \__pdfannex_layout_custom:
+  {
+    fitpaper = true ,
+    scale =
+      \fp_eval:n
+        {
+          min
+            (
+              \dim_ratio:nn { \paperwidth - 2 \l__pdfannex_margin_dim } { \paperwidth } ,
+              \dim_ratio:nn
+                { \paperheight - 2 \l__pdfannex_margin_dim - \l__pdfannex_footer_dim }
+                { \paperheight }
+            )
+        } ,
+    offset = 0pt~ \dim_eval:n { \l__pdfannex_footer_dim / 2 }
+  }
+\cs_new:Npn \__pdfannex_layout_preset:
   {
     \str_case:VnF \l__pdfannex_layout_tl
       {

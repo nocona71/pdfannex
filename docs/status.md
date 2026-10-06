@@ -15,4 +15,5 @@
 
 ## l3build
 - `testfiles/annex-basic.lvt`: 3 annexes, three layouts, counters; passes on pdftex/luatex/xetex (checkruns=2). Fixtures in `testfiles/support/`.
-- Open: `margin`/`footer-space` keys, ref/list content assertions, decision 0005 (aux-based list instead of `.loa`).
+- `testfiles/annex-refs.lvt`: asserts label numbers/pages and list entries; `margin`/`footer-space` keys implemented (uniform scale + upward shift, relative to host paper size).
+- Decision 0007 records the aux-based list. Open: more layouts/orientation, docs.
