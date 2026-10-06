@@ -13,8 +13,10 @@ python3 testfiles/test_packaging.py
 python3 testfiles/test_geometry.py
 python3 testfiles/test_pagination.py
 python3 testfiles/test_nup.py
-python3 adapter-example/test_docstore.py
-python3 adapter-example/test_integration.py
+# Root CI runs this same target through the adapter's composite action.
+if [[ "${PDFANNEX_SKIP_ADAPTER_TESTS:-0}" != 1 ]]; then
+  make -C adapter-example test
+fi
 python3 testfiles/test_cli.py
 python3 testfiles/test_dod.py
 

@@ -26,7 +26,8 @@ SRC = r"\documentclass{article}\pagestyle{empty}\begin{document}%s\end{document}
 
 
 def sh(cmd, cwd, check=True):
-    env = {"PATH": os.environ["PATH"], "HOME": str(cwd), "TEXINPUTS": f"{TEX}:"}
+    env = {"PATH": os.environ["PATH"], "HOME": str(cwd),
+           "TEXINPUTS": f"{TEX}:{HERE}:"}
     return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, check=check, env=env)
 
 
@@ -44,8 +45,26 @@ def text(cwd):
     return sh(["pdftotext", "host.pdf", "-"], cwd).stdout
 
 
-DOC_HOST = r"""\documentclass{article}\usepackage{pdfannex}
-\NewAnnexSource{\includedoc}{docstore}
+@unittest.skipUnless(shutil.which("pdflatex"), "pdflatex missing")
+class AdapterStyleTest(unittest.TestCase):
+    def test_older_core_without_source_command_fails_clearly(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            (d / "pdfannex.sty").write_text(
+                r"\ProvidesPackage{pdfannex}[2025/01/01 v0.1.0]" + "\n\\endinput\n")
+            (d / "check.tex").write_text(
+                r"\documentclass{article}\usepackage{pdfannex-docstore}"
+                r"\begin{document}x\end{document}")
+            env = {"PATH": os.environ["PATH"], "HOME": str(d),
+                   "TEXINPUTS": f"{d}:{HERE}:{TEX}:"}
+            run = subprocess.run(
+                ["pdflatex", "-interaction=nonstopmode", "-halt-on-error", "check.tex"],
+                cwd=d, env=env, capture_output=True, text=True)
+            self.assertNotEqual(run.returncode, 0)
+            self.assertIn("pdfannex 0.2.0 or later is required", run.stdout + run.stderr)
+
+
+DOC_HOST = r"""\documentclass{article}\usepackage{pdfannex-docstore}
 \begin{document}
 \includedoc[page-style=empty]{memo}{Memo}
 \includeannex[page-style=empty]{pdfannex://docstore/memo?rev=1}{Old memo}

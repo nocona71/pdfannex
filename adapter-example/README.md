@@ -14,7 +14,15 @@ the mock server and tests.
 | `conformance.py` | Generic protocol conformance check for any resolver |
 | `test_docstore.py` | Module tests of the adapter alone (`make test`) |
 | `test_integration.py` | Plain files and docstore documents in one document, with the real pdfannex package and CLI (`PDFANNEX_HOME`, default `..`; skipped if absent) |
-| `pdfannex-docstore.sty` | Optional: a nicer command name for the scheme |
+| `pdfannex-docstore.sty` | Optional companion package; requires pdfannex dated 2026/05/01 or later |
+| `.github/actions/test/action.yml` | Composite test action invoked by the monorepo CI and reusable after extracting this directory |
+| `.github/workflows/ci.yml` | Workflow template; GitHub activates it only after this directory is a repository root |
+
+The composite action runs `make test` and accepts `pdfannex-home` for the core
+checkout used by integration tests. In this repository, root CI invokes it with
+the workspace path. After separating this directory, the workflow template
+checks out `nocona71/pdfannex` beside the adapter and passes that checkout path.
+The caller must install the test tools listed in the workflow template.
 
 ## What the example serves
 

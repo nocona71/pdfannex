@@ -1,6 +1,11 @@
-% Optional companion for the docstore example resolver: gives the scheme a
-% nicer command name. Any scheme works the same way with \NewAnnexSource;
-% pdfannex.sty needs no adapter-specific code.
-\RequirePackage{pdfannex}
-\NewAnnexSource{\includedoc}{docstore}
+% Optional companion for the docstore example resolver.
+\ProvidesPackage{pdfannex-docstore}[2026/10/06 v0.1.0 Docstore adapter for pdfannex]
+\RequirePackage{pdfannex}[2026/05/01]
+\makeatletter
+\@ifundefined{NewAnnexSource}
+  {\PackageError{pdfannex-docstore}
+     {pdfannex 0.2.0 or later is required}
+     {Update pdfannex to a release dated 2026/05/01 or later.}}
+  {\NewAnnexSource{\includedoc}{docstore}}
+\makeatother
 \endinput

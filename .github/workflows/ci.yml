@@ -31,6 +31,13 @@ jobs:
 
       - name: Check
         run: make check
+        env:
+          PDFANNEX_SKIP_ADAPTER_TESTS: "1"
+
+      - name: Test adapter example
+        uses: ./adapter-example/.github/actions/test
+        with:
+          pdfannex-home: ${{ github.workspace }}
 
       - name: Build documentation
         run: make doc

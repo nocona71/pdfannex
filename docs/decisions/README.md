@@ -21,3 +21,4 @@ Add a new file whenever a design or process decision is made. Never silently cha
 | 0014 | [Example docstore resolver and `\NewAnnexSource`](0014-example-docstore-resolver.md) | partly superseded by 0016 |
 | 0015 | [CLI handles plain files itself](0015-cli-handles-plain-files.md) | accepted |
 | 0016 | [Package adapters for CTAN distribution](0016-package-adapters-for-ctan.md) | accepted |
+| 0017 | [Keep adapter CI separable](0017-adapter-ci-composite-action.md) | accepted |
