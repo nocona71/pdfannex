@@ -92,10 +92,63 @@ end
 ---------------------------------------------------------------- resolvers
 local describe_cache = {}
 
+-- Built-in handler for pdfannex://file/<project-relative path>. Plain paths are
+-- not routed through a resolver program. Only files inside the project root are
+-- served, so a foreign .tex file cannot import arbitrary files into the store.
+local function locate_file(source)
+  local path, query = source:match("^pdfannex://file/([^?]*)%??(.*)$")
+  path = path and lib.pct_decode(path)
+  if not path or path == "" then
+    return nil, "invalid-source", "expected pdfannex://file/<path>"
+  end
+  if query ~= "" then
+    return nil, "unsupported-source-option", "plain files take no options: " .. query
+  end
+  if path:sub(1, 1) == "/" then
+    return nil, "invalid-source", "absolute paths are not allowed"
+  end
+  local cur = ""
+  for part in path:gmatch("[^/]+") do
+    if part == ".." then
+      return nil, "permission-denied", "paths must stay inside the project"
+    end
+    if part ~= "." then
+      cur = cur == "" and part or (cur .. "/" .. part)
+      -- Symlinks could point outside the project; they are refused outright.
+      if lfs.symlinkattributes(cur, "mode") == "link" then
+        return nil, "permission-denied", "symbolic links are not allowed: " .. cur
+      end
+    end
+  end
+  if lfs.attributes(cur, "mode") ~= "file" then
+    return nil, "resource-not-found", "no such file: " .. cur
+  end
+  return cur
+end
+
+local function file_call(operation, items)
+  local byid = {}
+  for _, req in ipairs(items) do
+    local rel, code, message = locate_file(req.source or "")
+    if not rel then
+      byid[req.id] = { id = req.id, error = { code = code, message = message } }
+    elseif operation == "resolve" then
+      byid[req.id] = { id = req.id, resolved = req.source,
+                       artifact = { path = lfs.currentdir() .. "/" .. rel } }
+    elseif not req.lockedSha256 then
+      byid[req.id] = { id = req.id, state = "unknown" }
+    else
+      local data = lib.read_file(rel)
+      byid[req.id] = data
+        and { id = req.id, state = lib.sha256_hex(data) == req.lockedSha256 and "up-to-date" or "update-available" }
+        or { id = req.id, error = { code = "permission-denied", message = "cannot read " .. rel } }
+    end
+  end
+  return byid
+end
+
 local function find_resolver(scheme)
   local name = "pdfannex-resolver-" .. scheme
-  local bundled = script_dir .. "/" .. name
-  if lib.exists(bundled) then return bundled end
   if os.execute("command -v " .. lib.shell_quote(name) .. " >/dev/null 2>&1") then return name end
   return nil, "no resolver '" .. name .. "' found on PATH for scheme '" .. scheme .. "'"
 end
@@ -133,6 +186,7 @@ end
 
 -- items: list of { id, source, ... }; returns map id -> result or nil, err.
 local function call(scheme, operation, items)
+  if scheme == "file" then return file_call(operation, items) end
   local info, err = connect(scheme)
   if not info then return nil, err end
   if operation == "status" and not info.capabilities.status then return {} end

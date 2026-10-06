@@ -1,4 +1,5 @@
 # 0013 The file resolver is the first Resolver Protocol 1 adapter
+- Status: the standalone `pdfannex-resolver-file` was removed by decision 0015; the CLI handles `pdfannex://file/` itself. The rest still holds.
 - Context: builds must be reproducible even if a source PDF changes or is tampered with (spec/09). Local files need the same protection as external systems.
 - Decision:
   1. Hashing, the project-local store, `pdfannex.lock` and `resolved.tex` stay in the CLI (spec/09). A resolver only acquires a readable PDF.

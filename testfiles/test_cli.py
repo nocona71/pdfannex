@@ -1,4 +1,4 @@
-"""End-to-end tests of the pdfannex CLI and the bundled file resolver."""
+"""End-to-end tests of the pdfannex CLI (built-in file handling) and the docstore example."""
 
 import json
 import os
@@ -14,7 +14,6 @@ sys.path.insert(0, str(ROOT / "testfiles"))
 from resolver_conformance import conform  # noqa: E402
 
 CLI = ROOT / "cli" / "pdfannex"
-RESOLVER = ROOT / "cli" / "pdfannex-resolver-file"
 DOCSTORE = ROOT / "examples" / "pdfannex-resolver-docstore"
 NEEDS = shutil.which("texlua") and shutil.which("pdflatex") and shutil.which("pdftotext")
 
@@ -70,26 +69,19 @@ class Cli(unittest.TestCase):
         latex(self.d)
         return cli(self.d, "prepare", "host.tex")
 
-    def test_file_resolver_conforms(self):
-        cwd = os.getcwd()
-        os.chdir(self.d)
-        try:
-            conform(str(RESOLVER), "file", "pdfannex://file/a.pdf", "pdfannex://file/none.pdf")
-        finally:
-            os.chdir(cwd)
-
-    def test_file_resolver_confines_paths(self):
+    def test_files_are_confined_to_the_project(self):
         (self.d / "sub").mkdir()
         os.symlink("/etc/hostname", self.d / "link.pdf")
-        for src, code in [("pdfannex://file/../x.pdf", "permission-denied"),
-                          ("pdfannex://file//etc/passwd", "invalid-source"),
-                          ("pdfannex://file/link.pdf", "permission-denied"),
-                          ("pdfannex://file/a.pdf?rev=2", "unsupported-source-option")]:
-            req = {"protocolVersion": 1, "operation": "resolve",
-                   "requests": [{"id": "r", "source": src}]}
-            out = subprocess.run([str(RESOLVER)], input=json.dumps(req), cwd=self.d,
-                                 capture_output=True, text=True).stdout
-            self.assertEqual(json.loads(out)["results"][0]["error"]["code"], code, src)
+        for src, code in [("../x.pdf", "permission-denied"),
+                          ("/etc/passwd", "invalid-source"),
+                          ("link.pdf", "permission-denied"),
+                          ("pdfannex://file/a.pdf?rev=2", "unsupported-source-option"),
+                          ("missing.pdf", "resource-not-found")]:
+            write_requests(self.d, src)
+            run = cli(self.d, "prepare", "host.tex", check=False)
+            self.assertNotEqual(run.returncode, 0, src)
+            self.assertIn(code, run.stderr, src)
+            self.assertFalse((self.d / "pdfannex.lock").read_text().count("passwd"), src)
 
     def test_lock_store_and_rebuild(self):
         self.assertIn("1 source(s) locked", self.lock().stdout)
@@ -114,14 +106,6 @@ class Cli(unittest.TestCase):
         latex(self.d)
         self.assertIn("BETA", text(self.d))
         self.assertIn("up-to-date", cli(self.d, "status", "host.tex").stdout)
-
-    def test_locked_rebuild_makes_no_resolver_calls(self):
-        self.lock()
-        tool = self.d / "tool"
-        shutil.copytree(ROOT / "cli", tool)
-        (tool / "pdfannex-resolver-file").unlink()
-        run = sh(["texlua", str(tool / "pdfannex"), "prepare", "host.tex"], self.d)
-        self.assertEqual(run.returncode, 0)
 
     def test_exact_recovery_and_hash_mismatch(self):
         self.lock()
@@ -272,6 +256,13 @@ class DocstoreExample(unittest.TestCase):
         for word in ("SECOND", "FIRST", "ALPHA"):
             self.assertIn(word, out)
         self.assertNotIn("THIRD", out)
+
+    def test_locked_rebuild_needs_no_resolver(self):
+        self.build()
+        self.run_cli("prepare", "host.tex")
+        self.env["PATH"] = os.environ["PATH"]  # resolver no longer reachable
+        run = self.run_cli("prepare", "host.tex")
+        self.assertEqual(run.returncode, 0, run.stderr)
 
     def test_unknown_option_and_missing_document(self):
         for src in ("pdfannex://docstore/memo?x=1", "pdfannex://docstore/none"):

@@ -92,7 +92,7 @@ transactionality
 
 Validate Resolver Protocol 1 with:
 
-- a reference resolver, the file resolver `pdfannex-resolver-file` (decision 0013), which doubles as the mock;
+- a reference resolver, the example `pdfannex-resolver-docstore` (decision 0014), which doubles as the mock and as a fork-start (plain files are handled inside the CLI, decision 0015);
 - at least one real external system;
 - the MCP bridge spike.
 

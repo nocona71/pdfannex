@@ -298,7 +298,7 @@ Executables and discovery:
 - A resolver is a standalone executable `pdfannex-resolver-SCHEME` on `PATH` (see `spec/07`).
 - `describe` MUST list the URI schemes it handles, so a mismatch is detected before `resolve`.
 - Resolvers are installed and versioned independently of `pdfannex.sty` and the CLI.
-- The reference file resolver `pdfannex-resolver-file` ships with the CLI.
+- The `file` scheme is not a resolver: the CLI handles it itself (see File Handling). The example `examples/pdfannex-resolver-docstore` is the template for new resolvers.
 
 Source options:
 
@@ -316,18 +316,18 @@ Trust:
 
 Conformance:
 
-- A conformance script SHOULD run any resolver through `describe`, a successful `resolve`, a missing resource and a malformed request. The file resolver MUST pass it.
+- A conformance script SHOULD run any resolver through `describe`, a successful `resolve`, a missing resource and a malformed request. The example resolver MUST pass it.
 
 ---
 
-# File Resolver
+# File Handling
 
-`pdfannex://file/PATH` refers to a path relative to the project root.
+`pdfannex://file/PATH` refers to a path relative to the project root. Plain `\includeannex` paths mean this URI. The CLI handles the scheme itself, with the semantics below; no resolver program is involved.
 
 - Absolute paths yield `invalid-source`; `..` segments yield `permission-denied`.
 - v0.1 refuses symbolic links in any path component (`permission-denied`), instead of resolving them.
 - The resolved identity equals the requested locator, since plain files have no revision.
-- The file resolver takes no source options; any option yields `unsupported-source-option`.
-- Content-addressed resolvers have no upstream revision. A `status` request MAY therefore carry `lockedSha256`, and the file resolver compares it with the current file bytes (`up-to-date` or `update-available`). Without it the state is `unknown`.
+- Plain files take no source options; any option yields `unsupported-source-option`.
+- Content-addressed resolvers have no upstream revision. A `status` request MAY therefore carry `lockedSha256`, and the CLI compares it with the current file bytes (`up-to-date` or `update-available`). Without it the state is `unknown`.
 
 ---
