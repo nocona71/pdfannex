@@ -8,5 +8,5 @@
 \START
 \typeout{pages=\the\value{page} annexes=\the\value{annex}}
 \listofannexes
-\typeout{ref=\expandafter\detokenize\expandafter{\annexref{three}}}
+\typeout{ref=\detokenize{\annexref{three}/\annexpageref{three}}}
 \end{document}

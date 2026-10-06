@@ -1,5 +1,5 @@
 This is a generated file for the l3build validation system.
 Don't change this file in any respect.
 pages=6 annexes=3
-ref=\__cmd_start_optimized: \annexref code {three}
+ref=\annexref {three}/\annexpageref {three}
 [6] (annex-basic.aux)
