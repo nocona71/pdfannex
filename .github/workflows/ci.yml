@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Checkout
@@ -35,6 +35,18 @@ jobs:
       - name: Build documentation
         run: make doc
 
+      - name: Build CTAN archive
+        run: make package
+
+      - name: Upload CTAN archive
+        uses: actions/upload-artifact@v5
+        with:
+          name: ctan-archive
+          path: build/pdfannex-ctan.zip
+          if-no-files-found: error
+
   ctan-e2e:
     needs: check
     uses: ./.github/workflows/ctan-e2e.yml
+    with:
+      artifact: ctan-archive

@@ -6,16 +6,20 @@ on:
   workflow_call:
     inputs:
       release_tag:
-        description: Release tag whose archive to test; empty builds the archive from the checkout
+        description: Release tag whose archive to test; ignored when artifact is set
+        required: false
+        default: ""
+        type: string
+      artifact:
+        description: Name of a workflow artifact containing the archive built by an earlier job
         required: false
         default: ""
         type: string
   workflow_dispatch:
     inputs:
       release_tag:
-        description: Release tag whose archive to test (for example pdfannex-v0.1.0); empty builds from the checkout
-        required: false
-        default: ""
+        description: Release tag whose archive to test (for example pdfannex-v0.1.0)
+        required: true
         type: string
 
 permissions:
@@ -23,7 +27,7 @@ permissions:
 
 jobs:
   e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - name: Checkout
@@ -31,30 +35,31 @@ jobs:
         with:
           ref: ${{ inputs.release_tag }}
 
-      - name: Get CTAN archive
+      - name: Get CTAN archive from earlier job
+        if: inputs.artifact != ''
+        uses: actions/download-artifact@v5
+        with:
+          name: ${{ inputs.artifact }}
+          path: archive
+
+      - name: Get CTAN archive from release
+        if: inputs.artifact == ''
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.release_tag }}
-        run: |
-          mkdir archive
-          if [[ -n "$RELEASE_TAG" ]]; then
-            gh release download "$RELEASE_TAG" --pattern 'pdfannex-ctan-v*.zip' --dir archive
-          else
-            sudo apt-get update
-            sudo apt-get install -y --no-install-recommends \
-              latexmk make poppler-utils texlive-extra-utils texlive-fonts-recommended \
-              texlive-latex-base texlive-latex-extra texlive-luatex texlive-xetex
-            make package
-            cp build/pdfannex-ctan.zip archive/
-          fi
-          ls -l archive
+        run: gh release download "$RELEASE_TAG" --pattern 'pdfannex-ctan-v*.zip' --dir archive
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build clean TeX image (layers cached between runs)
+        uses: docker/build-push-action@v6
+        with:
+          context: .github/e2e
+          load: true
+          tags: pdfannex-e2e:clean
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Test archive in a clean container
-        run: |
-          docker run --rm -v "$PWD:/w:ro" ubuntu:24.04 bash -euxo pipefail -c '
-            apt-get update
-            DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-              latexmk poppler-utils unzip texlive-fonts-recommended texlive-latex-base \
-              texlive-latex-extra texlive-luatex texlive-xetex
-            /w/scripts/e2e-ctan /w/archive/*.zip
-          '
+        run: docker run --rm -v "$PWD:/w:ro" pdfannex-e2e:clean bash -euxo pipefail -c '/w/scripts/e2e-ctan /w/archive/*.zip'
