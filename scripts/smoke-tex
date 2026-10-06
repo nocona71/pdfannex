@@ -4,7 +4,7 @@ cd "$(dirname "$0")/.."
 
 workdir="$(mktemp -d)"
 trap 'rm -rf "$workdir"' EXIT
-cp testfiles/load-package.tex "$workdir/"
+cp testfiles/load-package.tex testfiles/include-annex.tex testfiles/support/*.pdf "$workdir/"
 
 for engine in pdflatex lualatex xelatex; do
   echo "==> $engine"
@@ -13,4 +13,12 @@ for engine in pdflatex lualatex xelatex; do
     -output-directory="$workdir" "$workdir/load-package.tex" >/dev/null
   test -s "$workdir/load-package.pdf"
   rm -f "$workdir"/load-package.{aux,log,pdf,out}
+  # -halt-on-error makes any package error (e.g. an unknown pdfpages key) fail.
+  for _ in 1 2; do
+    TEXINPUTS="$PWD/tex:${TEXINPUTS:-}" \
+      "$engine" -interaction=nonstopmode -halt-on-error \
+      -output-directory="$workdir" "$workdir/include-annex.tex" >/dev/null
+  done
+  test "$(pdfinfo "$workdir/include-annex.pdf" | awk '/^Pages:/{print $2}')" = 7
+  rm -f "$workdir"/include-annex.{aux,log,pdf,out}
 done

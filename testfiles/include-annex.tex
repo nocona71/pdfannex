@@ -1,0 +1,9 @@
+\documentclass{article}
+\usepackage{pdfannex}
+\begin{document}
+Body.
+\includeannex[label=one]{a1.pdf}{First}
+\includeannex[label=three,layout=footer-safe]{a3.pdf}{Third}
+\includeannex[layout=framed]{a1.pdf}{Framed}
+\listofannexes
+\end{document}
