@@ -18,6 +18,6 @@ Run LaTeX twice to resolve references.
  See `doc/pdfannex-doc.tex` for options.
 
 Status: v0.1 in development. Specification: [spec/index.md](spec/index.md).
-Reproducible inputs (experimental, not yet in the CTAN archive): `texlua cli/pdfannex prepare document.tex` locks every annex PDF by SHA-256 into `.pdfannex/` and `pdfannex.lock`; later builds use the locked copies. `status` reports changed sources, `update` accepts them, `verify` checks the store. See decision 0013.
+Reproducible inputs (experimental, not yet in the CTAN archive): run `texlua cli/pdfannex init` once (it creates `pdfannex.lock`, which makes the package record its sources; without it no extra files are written), build once, then `texlua cli/pdfannex prepare document.tex` locks every annex PDF by SHA-256 into `.pdfannex/` and `pdfannex.lock`; later builds use the locked copies. `status` reports changed sources, `update` accepts them, `verify` checks the store. See decision 0013.
 
 Development: `make check` (smoke tests), `make e2e` (install the CTAN archive into a clean TEXMFHOME and build with it), `make test` (l3build), `make doc`, `make package`.

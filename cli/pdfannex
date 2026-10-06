@@ -21,6 +21,8 @@ local USAGE = [[
 usage: pdfannex <command> document.tex
 
 commands:
+  init      start using the CLI in this directory: create an empty pdfannex.lock,
+            which makes pdfannex.sty record requests (usage: pdfannex init)
   prepare   lock requested sources that are not locked yet (no resolver calls
             when everything is locked); regenerate the resolution map
   update    explicitly re-resolve all requested sources and advance the lock
@@ -325,6 +327,12 @@ end
 local cmd, doc = arg[1], arg[2]
 if cmd == "--version" then print("pdfannex " .. VERSION); os.exit(0) end
 if not cmd or cmd == "--help" or cmd == "-h" then print(USAGE); os.exit(cmd and 0 or 1) end
+if cmd == "init" then
+  if lib.read_file(LOCK) then print("pdfannex: " .. LOCK .. " already exists"); os.exit(0) end
+  assert(lib.atomic_write(LOCK, lib.json_encode({ schema = 1, sources = {} }, true) .. "\n"))
+  print("pdfannex: created " .. LOCK .. "; run LaTeX, then 'pdfannex prepare'")
+  os.exit(0)
+end
 if not doc then io.stderr:write(USAGE, "\n"); os.exit(1) end
 if not ({ prepare = 1, update = 1, status = 1, verify = 1 })[cmd] then
   die("unknown command '" .. cmd .. "'")

@@ -60,6 +60,7 @@ class Cli(unittest.TestCase):
         self.d = Path(self.tmp.name)
         pdf(self.d, "a", "ALPHA")
         pdf(self.d, "b", "BETA")
+        cli(self.d, "init")
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -174,6 +175,16 @@ class Cli(unittest.TestCase):
                     self.assertIn(f"NAME{i}", out)
                 # Every engine must write the same requests the CLI locked.
                 cli(self.d, "verify", "host.tex")
+
+    def test_requests_are_opt_in(self):
+        (self.d / "pdfannex.lock").unlink()
+        latex(self.d)
+        self.assertFalse((self.d / "host.pdfannex-requests").exists())
+        cli(self.d, "init")
+        self.assertIn("already exists", cli(self.d, "init").stdout)
+        latex(self.d)
+        self.assertTrue((self.d / "host.pdfannex-requests").exists())
+        self.assertIn("1 source(s) locked", cli(self.d, "prepare", "host.tex").stdout)
 
     def test_non_pdf_is_rejected(self):
         (self.d / "a.pdf").write_text("not a pdf")

@@ -19,5 +19,5 @@
 - Decision 0007 records the aux-based list. Geometry: host sheet size kept, fit-to-sheet (may enlarge small pages, decision 0008), orientation preserved; `testfiles/test_geometry.py`. `pagination=continue` done (decision 0009, `testfiles/test_pagination.py`). Open: first CTAN release (release-please), `.loa` wording in spec/15 (aux-based per decision 0007), issue #1 (n-up): per-file `nup` done (decision 0012, `testfiles/test_nup.py`), mixed-file sheets still open.
 
 ## CLI and resolver (Phase B/C slice)
-- `cli/pdfannex` with `prepare`, `update`, `status`, `verify`; project-local SHA-256 store, `pdfannex.lock`, `.pdfannex/resolved.tex`; bundled `pdfannex-resolver-file` (decision 0013). Tests: `testfiles/test_cli.py`, `testfiles/resolver_conformance.py`.
+- `cli/pdfannex` with `init`, `prepare`, `update`, `status`, `verify`; project-local SHA-256 store, `pdfannex.lock`, `.pdfannex/resolved.tex`; bundled `pdfannex-resolver-file` (decision 0013). Tests: `testfiles/test_cli.py`, `testfiles/resolver_conformance.py`.
 - Not yet: CLI in the CTAN archive, `latexmk` helper, other resolvers (Paperless, MCP spike), manual/README chapter.

@@ -22,6 +22,7 @@ def lock_inputs(work, jobname, env, first_build):
     if not ENABLED:
         return
     work = Path(work)
+    subprocess.run(["texlua", str(CLI), "init"], cwd=work, check=True, capture_output=True, env=env)
     subprocess.run(first_build, cwd=work, check=True, capture_output=True, env=env)
     subprocess.run(["texlua", str(CLI), "prepare", f"{jobname}.tex"], cwd=work, check=True,
                    capture_output=True, env=env)

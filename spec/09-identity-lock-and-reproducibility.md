@@ -214,11 +214,13 @@ The resolution map is generated state.
 
 # Request State
 
-When an external source has no prepared artifact, `pdfannex.sty` may write build-state information such as:
+In a project that uses the CLI, `pdfannex.sty` writes build-state information such as:
 
 ```text
 <jobname>.pdfannex-requests
 ```
+
+Writing is opt-in: the file is written only if `pdfannex.lock` exists in the working directory. `pdfannex init` creates an empty lock for that purpose. Without a lock, the package writes no extra files.
 
 This format is internal.
 

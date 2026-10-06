@@ -131,14 +131,19 @@
       { \exp_args:NNV \str_set_convert:Nnnn \l__pdfannex_hex_str \l__pdfannex_key_str { utf8 } { utf8/hex } }
       { \exp_args:NNV \str_set_convert:Nnnn \l__pdfannex_hex_str \l__pdfannex_key_str { } { utf8/hex } }
   }
+% Opt-in: requests are recorded only in projects that use the CLI, i.e. when
+% pdfannex.lock exists (created by `pdfannex init`).
 \cs_new_protected:Npn \__pdfannex_write_request:
   {
-    \bool_if:NF \g__pdfannex_requests_open_bool
+    \file_if_exist:nT { pdfannex.lock }
       {
-        \iow_open:Nn \g__pdfannex_requests_iow { \c_sys_jobname_str .pdfannex-requests }
-        \bool_gset_true:N \g__pdfannex_requests_open_bool
+        \bool_if:NF \g__pdfannex_requests_open_bool
+          {
+            \iow_open:Nn \g__pdfannex_requests_iow { \c_sys_jobname_str .pdfannex-requests }
+            \bool_gset_true:N \g__pdfannex_requests_open_bool
+          }
+        \iow_now:Nx \g__pdfannex_requests_iow { \l__pdfannex_hex_str }
       }
-    \iow_now:Nx \g__pdfannex_requests_iow { \l__pdfannex_hex_str }
   }
 \cs_new_protected:Npn \__pdfannex_resolve:n #1
   {
