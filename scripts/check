@@ -12,4 +12,5 @@ python3 testfiles/test_devcontainer.py
 python3 testfiles/test_packaging.py
 python3 testfiles/test_geometry.py
 python3 testfiles/test_pagination.py
+python3 testfiles/test_dod.py
 ./scripts/smoke-tex

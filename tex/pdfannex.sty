@@ -28,6 +28,7 @@
 \tl_new:N \l__pdfannex_pagination_tl
 \bool_new:N \l__pdfannex_bookmark_bool
 \bool_new:N \l__pdfannex_list_bool
+\bool_new:N \l__pdfannex_frame_bool
 \bool_new:N \g__pdfannex_first_bool
 \dim_new:N \l__pdfannex_margin_dim
 \dim_new:N \l__pdfannex_footer_dim
@@ -48,6 +49,8 @@
     footer-space .dim_set:N = \l__pdfannex_footer_dim ,
     bookmark   .bool_set:N = \l__pdfannex_bookmark_bool ,
     list       .bool_set:N = \l__pdfannex_list_bool ,
+    frame      .bool_set:N = \l__pdfannex_frame_bool ,
+    frame      .default:n = true ,
     bookmark   .default:n = true ,
     list       .default:n = true ,
   }
@@ -67,6 +70,7 @@
     \group_begin:
       \tl_clear:N \l__pdfannex_label_tl
       \tl_set:Nn \l__pdfannex_pages_tl { - }
+      \bool_set_false:N \l__pdfannex_frame_bool
       \dim_zero:N \l__pdfannex_margin_dim
       \dim_zero:N \l__pdfannex_footer_dim
       \bool_set_true:N \l__pdfannex_bookmark_bool
@@ -104,6 +108,7 @@
 % aspect ratio and does not rotate; scale shrinks further.
 \cs_new:Npn \__pdfannex_layout_opts:
   {
+    \bool_if:NT \l__pdfannex_frame_bool { frame = true , }
     \bool_lazy_and:nnTF
       { \dim_compare_p:nNn { \l__pdfannex_margin_dim } = { \c_zero_dim } }
       { \dim_compare_p:nNn { \l__pdfannex_footer_dim } = { \c_zero_dim } }
@@ -172,7 +177,7 @@
       {
         \bookmark
           [ level = 1 , dest = pdfannex.\theannex ]
-          { \l__pdfannex_annexname_tl~\theannex :~\l__pdfannex_title_tl }
+          { \l__pdfannex_annexname_tl \c_space_tl \theannex :~\l__pdfannex_title_tl }
       }
   }
 
@@ -190,7 +195,7 @@
 \cs_new_protected:Npn \__pdfannex_loa_line:nnn #1#2#3
   {
     \par\noindent
-    \hyperlink { pdfannex.#1 } { \l__pdfannex_annexname_tl~#1 :~#2 }
+    \hyperlink { pdfannex.#1 } { \l__pdfannex_annexname_tl \c_space_tl #1 :~#2 }
     \dotfill~#3 \par
   }
 \NewDocumentCommand \listofannexes { }
@@ -215,7 +220,7 @@
 \NewDocumentCommand \annexref { m }
   {
     \hyperlink { pdfannex. \__pdfannex_ref_num:n {#1} }
-      { \l__pdfannex_annexname_tl~\__pdfannex_ref_num:n {#1} }
+      { \l__pdfannex_annexname_tl \c_space_tl \__pdfannex_ref_num:n {#1} }
   }
 \NewDocumentCommand \annexpageref { m } { \__pdfannex_ref_page:n {#1} }
 

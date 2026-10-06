@@ -51,7 +51,7 @@ Expected:
 - proportional page fitting;
 - no footer/source overlap;
 - correct first-page tracking;
-- `.loa`-based List of Annexes;
+- aux-based List of Annexes (decision 0007);
 - working references;
 - unique hyperlink targets;
 - clean bookmarks;
@@ -114,7 +114,7 @@ Required for v0.1:
 - local PDF workflow works;
 - `pdfpages` integration works;
 - layouts work;
-- `.loa` works;
+- list of annexes works;
 - references work;
 - bookmarks work;
 - pagination works;
