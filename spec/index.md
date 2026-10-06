@@ -1,6 +1,6 @@
 # pdfannex v0.1 spec — index
 
-Split by topic from `spec-0.1.md`.
+Split by topic from the original monolithic v0.1 spec (see git history).
 
 - [01-overview](01-overview.md) — 4643 B
 - [02-pdf-core-and-latex-api](02-pdf-core-and-latex-api.md) — 2867 B
