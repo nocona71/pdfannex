@@ -1,0 +1,22 @@
+\documentclass{article}
+\usepackage{pdfpages}\usepackage[hidelinks]{hyperref}\usepackage{bookmark}
+\makeatletter
+\newcounter{ann}
+\newcommand\Ann[2]{%
+ \stepcounter{ann}%
+ \def\@ann@first{1}%
+ \includepdf[pages=-,
+   pagecommand*={\ifnum\value{page}>0 \ann@first@hook{\theann}{#2}\fi},
+   ]{Anlagen/#1}}
+\newif\ifann@done
+\newcommand\ann@first@hook[2]{%
+  \protected@write\@auxout{}{\string\annpage{#1}{\thepage}}%
+  \typeout{HOOK ann=#1 page=\thepage}}
+\newcommand\annpage[2]{\expandafter\gdef\csname annp@#1\endcsname{#2}}
+\makeatother
+\begin{document}
+Text\newpage
+\Ann{a3}{Three}
+\Ann{a1}{One}
+See page \csname annp@1\endcsname.
+\end{document}

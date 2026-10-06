@@ -19,4 +19,4 @@ resolver protocol for external sources. The project is currently **spec-only** (
 
 ## Conventions
 - Markdown, English (en-US), fenced code blocks tagged with language (`latex`, `json`, `bash`).
-- LaTeX code: `fancy-anlagen.sty` is the legacy predecessor style, useful as reference only.
+- LaTeX code: `legacy/fancy-anlagen.sty` is the legacy predecessor style, useful as reference only.
