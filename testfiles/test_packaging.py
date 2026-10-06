@@ -35,6 +35,7 @@ class Packaging(unittest.TestCase):
     def test_release_workflow_tag_prefix(self):
         text = (ROOT / ".github/workflows/ctan-release.yml").read_text()
         self.assertNotIn("paperless", text)
+        self.assertIn("pdfannex-v", text)
 
     @unittest.skipUnless(shutil.which("l3build"), "l3build not available")
     def test_ctan_archive(self):
