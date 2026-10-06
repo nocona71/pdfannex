@@ -2,24 +2,36 @@
 
 A complete, dependency-free example of a pdfannex source adapter (Resolver
 Protocol 1). Copy this directory as the start of your own adapter (Paperless,
-SharePoint, an HTTP server, ...). Nothing here depends on the rest of the
-pdfannex repository; it needs only `texlua` (TeX Live) and Python 3 for the tests.
+SharePoint, ...). Nothing here depends on the rest of the pdfannex repository;
+it needs `texlua` (TeX Live) and `curl`, plus Python 3 for the mock server and tests.
 
 | File | Purpose |
 |---|---|
 | `pdfannex-resolver-docstore` | The adapter: a texlua executable speaking Protocol 1 on stdin/stdout |
-| `adapter-lib.lua` | Minimal JSON and SHA-256 helpers (copy along) |
+| `adapter-lib.lua` | Minimal JSON, file and SHA-256 helpers (copy along) |
+| `docstore_server.py` | Mock document service (HTTP) with fault injection, for tests and demos |
 | `conformance.py` | Generic protocol conformance check for any resolver |
 | `test_docstore.py` | Module tests of the adapter alone (`make test`) |
 | `pdfannex-docstore.sty` | Optional: a nicer command name for the scheme |
 
 ## What the example serves
 
-`pdfannex://docstore/<id>[?rev=<n>]` from a directory laid out as:
+`pdfannex://docstore/<id>[?rev=<n>]` from an HTTP document service:
 
 ```text
-$PDFANNEX_DOCSTORE_DIR/<id>/<n>.pdf      (default directory: ./docstore)
+GET /docs/<id>            -> {"id": "<id>", "latest": <n>}
+GET /docs/<id>/<n>.pdf    -> PDF bytes          (Authorization: Bearer <token>)
 ```
+
+Configuration comes from the environment: `PDFANNEX_DOCSTORE_URL` (required),
+`PDFANNEX_DOCSTORE_TOKEN` (optional) and `PDFANNEX_DOCSTORE_TIMEOUT` (seconds,
+default 30). The token is handed to curl through a private temporary config
+file, so it never appears in the process list. HTTP errors map to protocol
+errors: 401 `authentication-required`, 403 `permission-denied`, 404
+`resource-not-found`, anything else `temporarily-unavailable`.
+
+Try it: `python3 docstore_server.py ROOT --token SECRET` serves
+`ROOT/<id>/<n>.pdf`; then export the two variables above.
 
 | Aspect | Where to look |
 |---|---|
@@ -27,7 +39,7 @@ $PDFANNEX_DOCSTORE_DIR/<id>/<n>.pdf      (default directory: ./docstore)
 | Pinning a floating request to a concrete revision | `resolve_one` (`resolved`) |
 | Update and tamper detection | `status_one` |
 | Refusing symlinks and non-PDF content | `check_revision` |
-| Configuration through the environment | `lookup` |
+| Configuration, curl call, error mapping | `fetch` |
 | Protocol plumbing: `describe`, errors, protocol version | bottom of the file |
 
 ## Use it with pdfannex
@@ -60,7 +72,7 @@ never in the lock, the requests file or the document.
 2. Replace `SCHEME` and the body of `lookup`; keep the protocol plumbing.
 3. Adapt `test_docstore.py`. The module tests cover what an adapter must get
    right before any integration test: invalid sources and options, a deleted
-   or emptied store, tampered content, symlinks, unreadable files, batches
+   document, server outages, bad credentials, redirects, timeouts, tampered content, garbage metadata, batches
    with mixed results and malformed requests. Hash checking against the lock
    is the pdfannex CLI's job, not the adapter's.
 4. Check protocol conformance of any resolver:
@@ -70,6 +82,7 @@ never in the lock, the requests file or the document.
      /path/to/pdfannex-resolver-SCHEME SCHEME pdfannex://SCHEME/good pdfannex://SCHEME/missing
    ```
 
-Behaviour worth keeping: revisions must be regular files that start with
-`%PDF-`; `status` reports `update-available` when a newer revision exists or
-when the locked revision's bytes changed, and an error when it was deleted.
+Resolve artifacts are temporary files (`/tmp/lua_*`) that the CLI moves into its
+store. Behaviour worth keeping: downloads must start with `%PDF-`; `status`
+reports `update-available` when a newer revision exists or when the locked
+revision's bytes changed, and an error when it was deleted.

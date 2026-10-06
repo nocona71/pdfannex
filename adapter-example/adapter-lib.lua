@@ -1,5 +1,5 @@
 -- Minimal helpers for the docstore example adapter, so that this directory has
--- no dependency on the rest of the pdfannex repository: JSON and SHA-256.
+-- no dependency on the rest of the pdfannex repository: JSON, files and SHA-256.
 -- (Derived from cli/pdfannex-lib.lua; copy this file with your adapter.)
 local M = {}
 
@@ -131,6 +131,14 @@ function M.read_file(path)
   local data = f:read("a")
   f:close()
   return data
+end
+
+function M.write_file(path, data)
+  local f, err = io.open(path, "wb")
+  if not f then return nil, err end
+  f:write(data)
+  f:close()
+  return true
 end
 
 -- sha2 is provided by texlua (LuaTeX).
