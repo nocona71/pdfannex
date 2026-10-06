@@ -45,7 +45,7 @@ Meaning:
 - preserve source aspect ratio;
 - shrink as necessary;
 - do not crop by default;
-- do not upscale by default;
+- fit-to-sheet scaling by `pdfpages` may enlarge smaller source pages (v0.1 limitation, decision 0008; no-upscale is deferred);
 - never stretch non-uniformly.
 
 ---

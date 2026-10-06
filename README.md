@@ -12,7 +12,10 @@ specified but not yet implemented.
 See \annexref{cv} on page \annexpageref{cv}.
 ```
 
-Run LaTeX twice to resolve references. See `doc/pdfannex-doc.tex` for options.
+Run LaTeX twice to resolve references.
+
+**Warning:** annex pages are scaled to fit the host sheet (aspect ratio and orientation preserved). Source pages smaller than the sheet, such as A5 in an A4 document, are enlarged; larger pages are shrunk.
+ See `doc/pdfannex-doc.tex` for options.
 
 Status: v0.1 in development. Specification: [spec/index.md](spec/index.md).
 Development: `make check` (smoke tests), `make test` (l3build), `make doc`, `make package`.

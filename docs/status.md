@@ -16,4 +16,4 @@
 ## l3build
 - `testfiles/annex-basic.lvt`: 3 annexes, three layouts, counters; passes on pdftex/luatex/xetex (checkruns=2). Fixtures in `testfiles/support/`.
 - `testfiles/annex-refs.lvt`: asserts label numbers/pages and list entries; `margin`/`footer-space` keys implemented (uniform scale + upward shift, relative to host paper size).
-- Decision 0007 records the aux-based list. Open: more layouts/orientation, docs.
+- Decision 0007 records the aux-based list. Geometry: host sheet size kept, fit-to-sheet (may enlarge small pages, decision 0008), orientation preserved; `testfiles/test_geometry.py`. Open: `pagination=continue` (needs scrlttr2 test), docs polish.

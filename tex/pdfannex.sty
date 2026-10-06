@@ -89,7 +89,9 @@
 \cs_new_protected:Npn \__pdfannex_includepdf:nn #1#2
   { \includepdf [ #1 ] { #2 } }
 
-% Layout -> pdfpages options (approximate fractions of the sheet).
+% Layout -> pdfpages options. The host sheet size is kept (no fitpaper):
+% pdfpages shrinks oversized source pages to fit, never enlarges, keeps the
+% aspect ratio and does not rotate; scale shrinks further.
 \cs_new:Npn \__pdfannex_layout_opts:
   {
     \bool_lazy_and:nnTF
@@ -102,7 +104,6 @@
 % uniform scale; the footer area is cleared by shifting the content up.
 \cs_new:Npn \__pdfannex_layout_custom:
   {
-    fitpaper = true ,
     scale =
       \fp_eval:n
         {
@@ -120,11 +121,11 @@
   {
     \str_case:VnF \l__pdfannex_layout_tl
       {
-        { fullpage } { fitpaper = true }
-        { footer-safe } { fitpaper = true , scale = 0.9 , offset = 0mm~5mm }
-        { framed } { fitpaper = true , scale = 0.85 , frame = true }
+        { fullpage } { }
+        { footer-safe } { scale = 0.9 , offset = 0mm~5mm }
+        { framed } { scale = 0.85 , frame = true }
       }
-      { fitpaper = true }
+      { }
   }
 
 % pdfpages has no first-page-only pagecommand (only picturecommand*, which runs

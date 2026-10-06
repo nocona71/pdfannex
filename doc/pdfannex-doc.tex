@@ -43,6 +43,17 @@ Prints the list of annexes. \verb|\annexref{|\emph{label}\verb|}| and
 \verb|\annexpageref{|\emph{label}\verb|}| give a link to the annex and its
 first page.
 
+\section{Page size and scaling}
+
+Annex pages keep the sheet size and orientation of the host document; pages are
+never rotated or stretched. Each source page is scaled uniformly to fit the
+sheet, and the aspect ratio is preserved.
+
+\textbf{Warning:} \texttt{pdfpages} scales to fit, so source pages smaller than
+the host sheet (for example an A5 PDF in an A4 document) are \emph{enlarged}
+to fill it, and larger pages are shrunk. Preventing enlargement is not
+supported in this version. Pages in the same PDF are fitted independently.
+
 \section{Options}
 
 \begin{description}
