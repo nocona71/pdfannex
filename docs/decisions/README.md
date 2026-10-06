@@ -17,3 +17,4 @@ Add a new file whenever a design or process decision is made. Never silently cha
 | 0010 | [Default branch is `main`](0010-default-branch-main.md) | accepted |
 | 0011 | [End-to-end test of the CTAN archive](0011-ctan-archive-e2e-test.md) | accepted |
 | 0012 | [Per-file n-up (`nup` key)](0012-nup-per-file.md) | accepted |
+| 0013 | [File resolver is the first Resolver Protocol 1 adapter](0013-file-resolver-first-adapter.md) | accepted |

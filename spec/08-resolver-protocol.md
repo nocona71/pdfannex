@@ -290,3 +290,42 @@ not the human title.
 Human lookup, autocomplete and resource browsing are important future integration scenarios but are out of scope for the CTAN package v0.1.
 
 ---
+
+# Resolver Conventions
+
+Executables and discovery:
+
+- A resolver is a standalone executable `pdfannex-resolver-SCHEME` on `PATH` (see `spec/07`).
+- `describe` MUST list the URI schemes it handles, so a mismatch is detected before `resolve`.
+- Resolvers are installed and versioned independently of `pdfannex.sty` and the CLI.
+- The reference file resolver `pdfannex-resolver-file` ships with the CLI.
+
+Source options:
+
+- Options are URI query parameters, for example `?selector=latest`.
+- An unknown option MUST yield `unsupported-source-option`.
+
+Configuration and secrets:
+
+- A resolver reads configuration from environment variables named `PDFANNEX_SCHEME_*` (scheme upper-cased) and MAY use its own config file.
+- Secrets MUST NOT appear in `pdfannex.lock`, `resolved.tex`, requests or responses.
+
+Trust:
+
+- Resolvers are arbitrary code. The CLI MUST invoke them only from explicit commands (`prepare`, `update`), never while compiling.
+
+Conformance:
+
+- A conformance script SHOULD run any resolver through `describe`, a successful `resolve`, a missing resource and a malformed request. The file resolver MUST pass it.
+
+---
+
+# File Resolver
+
+`pdfannex://file/PATH` refers to a path relative to the project root.
+
+- Absolute paths, `..` segments and paths that resolve outside the project root (after symlink resolution) MUST yield `invalid-source` or `permission-denied`.
+- The resolved identity equals the requested locator, since plain files have no revision.
+- Change detection is the CLI's SHA-256 comparison, not the resolver's.
+
+---
