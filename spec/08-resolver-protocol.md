@@ -298,7 +298,7 @@ Executables and discovery:
 - A resolver is a standalone executable `pdfannex-resolver-SCHEME` on `PATH` (see `spec/07`).
 - `describe` MUST list the URI schemes it handles, so a mismatch is detected before `resolve`.
 - Resolvers are installed and versioned independently of `pdfannex.sty` and the CLI.
-- The `file` scheme is not a resolver: the CLI handles it itself (see File Handling). The example `examples/pdfannex-resolver-docstore` is the template for new resolvers.
+- The `file` scheme is not a resolver: the CLI handles it itself (see File Handling). The example `adapter-example/pdfannex-resolver-docstore` is the template for new resolvers.
 
 Source options:
 

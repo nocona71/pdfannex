@@ -11,7 +11,7 @@
   7. Third-party resolvers follow spec/08 "Resolver Conventions" (naming, configuration, source options, conformance script).
 - Package side: `pdfannex.sty` works unchanged without CLI or lock; a `pdfannex://` source is looked up in `resolved.tex`, and a missing entry errors with a hint to run `pdfannex lock`.
 - Consequences: the Resolver Protocol is exercised end to end before any network resolver exists. 
-- Implemented (v0.1 slice): `cli/pdfannex` (`prepare`, `update`, `status`, `verify`), `cli/pdfannex-resolver-file`, shared `cli/pdfannex-lib.lua` (JSON, SHA-256 via LuaTeX `sha2`, filesystem, process wrappers), `testfiles/resolver_conformance.py`, `testfiles/test_cli.py`.
+- Implemented (v0.1 slice): `cli/pdfannex` (`prepare`, `update`, `status`, `verify`), `cli/pdfannex-resolver-file`, shared `cli/pdfannex-lib.lua` (JSON, SHA-256 via LuaTeX `sha2`, filesystem, process wrappers), `adapter-example/conformance.py`, `testfiles/test_cli.py`.
 - Request state: `pdfannex.sty` writes `<jobname>.pdfannex-requests` (one normalized source per line) and reads `.pdfannex/resolved.tex`. A locked plain path builds from the stored object; an unlocked plain path is used directly; an unlocked `pdfannex://` URI is a LaTeX error.
 - Symlinks are refused by the file resolver in v0.1 rather than resolved. `status` passes `lockedSha256` to resolvers that can use it (content-addressed sources).
 - Recording requests is opt-in: `pdfannex.sty` writes `<jobname>.pdfannex-requests` only if `pdfannex.lock` exists. `pdfannex init` creates an empty lock. Users without the CLI get no extra files and no write-permission dependency.

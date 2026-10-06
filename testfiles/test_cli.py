@@ -10,11 +10,9 @@ import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "testfiles"))
-from resolver_conformance import conform  # noqa: E402
 
 CLI = ROOT / "cli" / "pdfannex"
-DOCSTORE = ROOT / "examples" / "pdfannex-resolver-docstore"
+DOCSTORE = ROOT / "adapter-example" / "pdfannex-resolver-docstore"
 NEEDS = shutil.which("texlua") and shutil.which("pdflatex") and shutil.which("pdftotext")
 
 SRC = r"\documentclass{article}\pagestyle{empty}\begin{document}%s\end{document}"
@@ -226,14 +224,6 @@ class DocstoreExample(unittest.TestCase):
     def build(self):
         # No -halt-on-error: the first build reports unresolved URIs but still records every request.
         sh(["pdflatex", "-interaction=nonstopmode", "host.tex"], self.d, check=False)
-
-    def test_conforms(self):
-        cwd = os.getcwd()
-        os.chdir(self.d)
-        try:
-            conform(str(DOCSTORE), "docstore", "pdfannex://docstore/memo", "pdfannex://docstore/none")
-        finally:
-            os.chdir(cwd)
 
     def test_alias_pins_revisions_and_detects_updates(self):
         self.build()

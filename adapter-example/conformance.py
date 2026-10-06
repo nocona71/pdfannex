@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Conformance checks for a Resolver Protocol 1 executable (spec/08).
 
-usage: resolver_conformance.py EXECUTABLE SCHEME GOOD_SOURCE MISSING_SOURCE
+usage: conformance.py EXECUTABLE SCHEME GOOD_SOURCE MISSING_SOURCE
 
 Run with the working directory set to a project where GOOD_SOURCE resolves to a
 readable file and MISSING_SOURCE does not exist.

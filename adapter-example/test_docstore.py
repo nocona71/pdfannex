@@ -3,8 +3,7 @@
 
 Run these first when changing the adapter (or a fork of it): they call the
 executable directly with Resolver Protocol 1 requests and cover the store being
-tampered with or emptied. Hashing and locking belong to the CLI and are covered
-by testfiles/test_cli.py.
+tampered with or emptied. Hashing and locking belong to the pdfannex CLI.
 """
 
 import hashlib
@@ -17,11 +16,11 @@ import sys
 import tempfile
 import unittest
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "testfiles"))
-from resolver_conformance import conform  # noqa: E402
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+from conformance import conform  # noqa: E402
 
-ADAPTER = ROOT / "examples" / "pdfannex-resolver-docstore"
+ADAPTER = HERE / "pdfannex-resolver-docstore"
 NEEDS = shutil.which("texlua")
 PDF = b"%PDF-1.4\n% fake but PDF-shaped\n"
 
