@@ -22,3 +22,4 @@ Add a new file whenever a design or process decision is made. Never silently cha
 | 0015 | [CLI handles plain files itself](0015-cli-handles-plain-files.md) | accepted |
 | 0016 | [Package adapters for CTAN distribution](0016-package-adapters-for-ctan.md) | accepted |
 | 0017 | [Keep adapter CI separable](0017-adapter-ci-composite-action.md) | accepted |
+| 0018 | [Track only intentional project files](0018-track-only-intentional-files.md) | accepted |

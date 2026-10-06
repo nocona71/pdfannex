@@ -21,6 +21,10 @@ resolver protocol for external sources. The LaTeX package is implemented (v0.1 i
 - Markdown, English (en-US), fenced code blocks tagged with language (`latex`, `json`, `bash`).
 - LaTeX code: `legacy/fancy-anlagen.sty` is the legacy predecessor style, useful as reference only.
 
+## Repository hygiene
+- Track only source, tests, documentation, and intentional fixtures. Keep generated PDFs, archives, TeX auxiliary files, caches, and temporary logs out of version control unless explicitly required.
+- Before staging, inspect the full worktree including untracked files; stage only files relevant to the task.
+
 ## Documentation rule
 Record every design/process decision as a file in `docs/decisions/` (update its README table) and experiment findings in `docs/`. Capture plans and open items in the repo so work can resume after an interruption.
 
