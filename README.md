@@ -38,4 +38,4 @@ normally makes commands available on `PATH`; otherwise invoke the installed
 script with `texlua` or add its scripts directory to `PATH`. Adapters must
 also be available on `PATH`.
 
-Development: `make check` (smoke tests), `make e2e` (install the CTAN archive into a clean TEXMFHOME and build with it), `make test` (l3build), `make doc`, `make package`.
+Development: `make check` (smoke tests), `make e2e` (install the CTAN archive into a clean TEXMFHOME and build with it), `make test` (l3build), `make doc`, `make package` (core CTAN archive), `make adapter-package` (docstore adapter archive).

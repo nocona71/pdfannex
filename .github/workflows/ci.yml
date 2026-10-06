@@ -45,11 +45,21 @@ jobs:
       - name: Build CTAN archive
         run: make package
 
+      - name: Build docstore adapter CTAN archive
+        run: make adapter-package
+
       - name: Upload CTAN archive
         uses: actions/upload-artifact@v5
         with:
           name: ctan-archive
           path: build/pdfannex-ctan.zip
+          if-no-files-found: error
+
+      - name: Upload docstore adapter CTAN archive
+        uses: actions/upload-artifact@v5
+        with:
+          name: docstore-adapter-ctan-archive
+          path: adapter-example/pdfannex-docstore-ctan.zip
           if-no-files-found: error
 
   ctan-e2e:

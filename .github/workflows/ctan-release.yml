@@ -67,6 +67,9 @@ jobs:
           make package
           cp build/pdfannex-ctan.zip \
             "build/pdfannex-ctan-v${VERSION}.zip"
+          make adapter-package
+          cp adapter-example/pdfannex-docstore-ctan.zip \
+            "build/pdfannex-docstore-ctan-v${VERSION}.zip"
 
       - name: Attach archive to GitHub Release
         env:
@@ -75,4 +78,5 @@ jobs:
         run: |
           gh release upload "$RELEASE_TAG" \
             "build/pdfannex-ctan-v${VERSION}.zip" \
+            "build/pdfannex-docstore-ctan-v${VERSION}.zip" \
             --clobber

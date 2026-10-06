@@ -1,0 +1,36 @@
+.TH PDFANNEX-RESOLVER-DOCSTORE 1
+.SH NAME
+pdfannex-resolver-docstore \- resolve pdfannex sources from an HTTP docstore
+.SH SYNOPSIS
+.B pdfannex-resolver-docstore
+.SH DESCRIPTION
+.B pdfannex-resolver-docstore
+implements Resolver Protocol 1 for the
+.B docstore
+scheme. It reads one JSON request from standard input and writes a JSON
+response to standard output. It is normally invoked by the
+.B pdfannex
+CLI.
+.SH CONFIGURATION
+.TP
+.B PDFANNEX_DOCSTORE_URL
+Required base URL of the HTTP document service.
+.TP
+.B PDFANNEX_DOCSTORE_TOKEN
+Optional bearer token.
+.TP
+.B PDFANNEX_DOCSTORE_TIMEOUT
+Optional request timeout in seconds; defaults to 30.
+.SH REQUIREMENTS
+Requires
+.BR texlua (1)
+and
+.BR curl (1).
+Curl must be available on
+.BR PATH .
+.SH SECURITY
+Credentials are read from the environment and are not included in resolver
+responses or the pdfannex lock file. The resolver does not follow HTTP
+redirects.
+.SH SEE ALSO
+.BR pdfannex (1)
