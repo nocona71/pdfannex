@@ -52,10 +52,6 @@
 
 \pdfannexsetup { layout = fullpage, page-style = plain, pagination = inherit }
 
-% Per-annex options start from the global defaults.
-\tl_new:N \g__pdfannex_default_layout_tl
-\tl_new:N \g__pdfannex_default_pagestyle_tl
-
 \NewDocumentCommand \includeannex { O{} m m }
   {
     \group_begin:
@@ -74,13 +70,28 @@
 
 \cs_new_protected:Npn \__pdfannex_include:n #1
   {
-    \includepdf
-      [
+    \exp_args:Nx \__pdfannex_includepdf:nn
+      {
+        \__pdfannex_layout_opts: ,
         pages = \l__pdfannex_pages_tl ,
-        pagecommand* = { \__pdfannex_first_page: } ,
-        pagecommand  = { \thispagestyle { \l__pdfannex_pagestyle_tl } } ,
-      ]
+        pagecommand* = { \exp_not:N \__pdfannex_first_page: } ,
+        pagecommand  = { \exp_not:N \thispagestyle { \l__pdfannex_pagestyle_tl } } ,
+      }
       { #1 }
+  }
+\cs_new_protected:Npn \__pdfannex_includepdf:nn #1#2
+  { \includepdf [ #1 ] { #2 } }
+
+% Layout -> pdfpages options (approximate fractions of the sheet).
+\cs_new:Npn \__pdfannex_layout_opts:
+  {
+    \str_case:VnF \l__pdfannex_layout_tl
+      {
+        { fullpage } { fitpaper = true }
+        { footer-safe } { fitpaper = true , scale = 0.9 , offset = 0mm~5mm }
+        { framed } { fitpaper = true , scale = 0.85 , frame = true }
+      }
+      { fitpaper = true }
   }
 
 % Runs once per annex, on its first inserted page.
