@@ -20,3 +20,6 @@ resolver protocol for external sources. The project is currently **spec-only** (
 ## Conventions
 - Markdown, English (en-US), fenced code blocks tagged with language (`latex`, `json`, `bash`).
 - LaTeX code: `legacy/fancy-anlagen.sty` is the legacy predecessor style, useful as reference only.
+
+## Documentation rule
+Record every design/process decision as a file in `docs/decisions/` (update its README table) and experiment findings in `docs/`. Capture plans and open items in the repo so work can resume after an interruption.
