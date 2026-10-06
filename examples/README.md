@@ -35,6 +35,19 @@ docstore/<id>/<n>.pdf
    `pdfannex status document.tex` reports `update-available` when a newer
    revision appears; `pdfannex update document.tex` accepts it.
 
+## Module tests
+
+`python3 examples/test_docstore.py` tests the adapter alone, without the CLI or
+LaTeX: conformance, revision handling, invalid sources and options, a deleted
+store or revision, tampered revisions (non-PDF content, in-place replacement),
+symlinks, unreadable files, batches and protocol errors. Run it first when
+changing the adapter; copy it with the adapter when you fork. Hash checking
+against the lock is the CLI's job (`testfiles/test_cli.py`).
+
+Behaviour worth copying: revisions must be regular files that start with
+`%PDF-`; `status` reports `update-available` when a newer revision exists or
+when the locked revision's bytes changed, and an error when it was deleted.
+
 ## Check your own adapter
 
 ```bash

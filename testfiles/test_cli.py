@@ -257,6 +257,16 @@ class DocstoreExample(unittest.TestCase):
             self.assertIn(word, out)
         self.assertNotIn("THIRD", out)
 
+    def test_tampered_revision_is_rejected_by_the_cli(self):
+        self.build()
+        self.run_cli("prepare", "host.tex")
+        shutil.rmtree(self.d / ".pdfannex/objects")
+        pdf(self.d, "evil", "EVIL")
+        (self.d / "evil.pdf").replace(self.d / "docstore" / "memo" / "2.pdf")
+        run = self.run_cli("prepare", "host.tex")
+        self.assertNotEqual(run.returncode, 0)
+        self.assertIn("hash mismatch", run.stderr)
+
     def test_locked_rebuild_needs_no_resolver(self):
         self.build()
         self.run_cli("prepare", "host.tex")

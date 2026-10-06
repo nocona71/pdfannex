@@ -16,13 +16,28 @@ local SCHEME = "docstore"
 local function reply(obj) io.stdout:write(lib.json_encode(obj), "\n") end
 local function fail(id, code, message) return { id = id, error = { code = code, message = message } } end
 
+-- Revision files are canonical decimal numbers: 1.pdf, 2.pdf, ... (no leading zeros).
 local function latest_revision(dir)
   local best
   for name in lfs.dir(dir) do
-    local n = name:match("^(%d+)%.pdf$")
-    if n and (not best or tonumber(n) > tonumber(best)) then best = n end
+    local n = name:match("^([1-9]%d*)%.pdf$")
+    if n and #n <= 9 and (not best or tonumber(n) > tonumber(best)) then best = n end
   end
   return best
+end
+
+-- A revision must be a regular file (no symlinks, so the store cannot point
+-- outside itself) that starts like a PDF. The CLI hashes and locks the bytes.
+local function check_revision(path)
+  if lfs.symlinkattributes(path, "mode") ~= "file" then
+    return nil, "resource-not-found", "revision is missing or not a regular file"
+  end
+  local f = io.open(path, "rb")
+  if not f then return nil, "permission-denied", "cannot read revision" end
+  local head = f:read(5)
+  f:close()
+  if head ~= "%PDF-" then return nil, "resource-not-found", "revision is not a PDF" end
+  return true
 end
 
 -- Adapter-specific part. Returns { path, rev, id, latest } or nil, code, message.
@@ -33,22 +48,22 @@ local function lookup(source)
   end
   local rev
   for key, value in query:gmatch("([^&=]+)=?([^&]*)") do
-    if key ~= "rev" or not value:match("^%d+$") then
-      return nil, "unsupported-source-option", "unsupported option: " .. key
+    if key ~= "rev" or rev or not value:match("^[1-9]%d?%d?%d?%d?%d?%d?%d?%d?$") then
+      return nil, "unsupported-source-option", "unsupported or repeated option: " .. key .. "=" .. value
     end
     rev = value
   end
   local root = os.getenv("PDFANNEX_DOCSTORE_DIR") or "docstore"
   local dir = root .. "/" .. id
-  if lfs.attributes(dir, "mode") ~= "directory" then
+  if lfs.symlinkattributes(dir, "mode") ~= "directory" then
     return nil, "resource-not-found", "no document " .. id
   end
   local latest = latest_revision(dir)
   rev = rev or latest
-  local path = dir .. "/" .. tostring(rev) .. ".pdf"
-  if not rev or lfs.attributes(path, "mode") ~= "file" then
-    return nil, "resource-not-found", "no revision " .. tostring(rev) .. " of " .. id
-  end
+  if not rev then return nil, "resource-not-found", "document " .. id .. " has no revisions" end
+  local path = dir .. "/" .. rev .. ".pdf"
+  local ok, code, message = check_revision(path)
+  if not ok then return nil, code, "revision " .. rev .. " of " .. id .. ": " .. message end
   if path:sub(1, 1) ~= "/" then path = lfs.currentdir() .. "/" .. path end
   return { path = path, rev = rev, id = id, latest = latest }
 end
@@ -60,13 +75,27 @@ local function resolve_one(req)
            artifact = { path = doc.path } }
 end
 
--- Compare the locked revision with the latest one.
+-- The locked revision is the one in req.resolved. It must still exist, and its
+-- bytes must still match the lock; otherwise the store was changed in place.
+-- A newer revision means update-available.
 local function status_one(req)
-  local doc, code, message = lookup(req.source or "")
+  local locked = (req.resolved or ""):match("^pdfannex://" .. SCHEME .. "/[%w_%-]+%?rev=([1-9]%d*)$")
+  if not locked then
+    local _, code, message = lookup(req.source or "")
+    if code then return fail(req.id, code, message) end
+    return { id = req.id, state = "unknown" }
+  end
+  local doc, code, message = lookup((req.resolved:gsub("^(.-)%?rev=.*$", "%1")) .. "?rev=" .. locked)
   if not doc then return fail(req.id, code, message) end
-  local locked = (req.resolved or ""):match("[?&]rev=(%d+)$")
-  if not locked then return { id = req.id, state = "unknown" } end
-  return { id = req.id, state = tonumber(locked) >= tonumber(doc.latest) and "up-to-date" or "update-available" }
+  if req.lockedSha256 then
+    local data = lib.read_file(doc.path)
+    if not data or lib.sha256_hex(data) ~= req.lockedSha256 then
+      return { id = req.id, state = "update-available" }
+    end
+  end
+  -- A source that pins ?rev= never has a newer revision to offer.
+  local pinned = (req.source or ""):find("[?&]rev=")
+  return { id = req.id, state = (not pinned and tonumber(locked) < tonumber(doc.latest)) and "update-available" or "up-to-date" }
 end
 
 local ok, request = pcall(lib.json_decode, io.stdin:read("a"))
