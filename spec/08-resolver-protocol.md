@@ -1,0 +1,292 @@
+# Resolver Protocol 1
+
+Resolver Protocol 1 should remain deliberately small.
+
+Transport:
+
+```text
+local process
+JSON on stdin
+JSON on stdout
+diagnostics on stderr
+```
+
+Required operations:
+
+```text
+describe
+resolve
+```
+
+Optional operation:
+
+```text
+status
+```
+
+No v0.1:
+
+```text
+REST resolver daemon
+persistent plugin server
+generic repository browser
+search protocol
+virtual filesystem
+backend execution graph
+backend reconciliation protocol
+```
+
+---
+
+# `describe`
+
+Every resolver MUST support:
+
+```text
+describe
+```
+
+Purpose:
+
+- implementation identity;
+- Resolver Protocol compatibility;
+- optional operation discovery.
+
+Conceptual request:
+
+```json
+{
+  "operation": "describe"
+}
+```
+
+Conceptual response:
+
+```json
+{
+  "resolver": {
+    "name": "paperless",
+    "version": "1.4.2"
+  },
+  "protocolVersions": [1],
+  "capabilities": [
+    "resolve",
+    "status"
+  ]
+}
+```
+
+`resolve` is mandatory.
+
+`status` is optional.
+
+Batch resolution is mandatory in Protocol 1 and does not need a separate capability flag.
+
+---
+
+# Protocol Compatibility
+
+The CLI MUST verify compatibility before invoking a resolver operationally for the first time in a process invocation.
+
+If no common Resolver Protocol version exists:
+
+- do not call `resolve`;
+- emit a clear diagnostic;
+- fail non-zero.
+
+Protocol version and resolver implementation version are independent.
+
+---
+
+# `resolve`
+
+Conceptual request:
+
+```json
+{
+  "protocolVersion": 1,
+  "operation": "resolve",
+  "requests": [
+    {
+      "id": "tax-assessment",
+      "source": "pdfannex://paperless/4711?selector=latest"
+    }
+  ]
+}
+```
+
+Conceptual success:
+
+```json
+{
+  "protocolVersion": 1,
+  "results": [
+    {
+      "id": "tax-assessment",
+      "resolved": "pdfannex://paperless/4711?version=98273",
+      "artifact": {
+        "path": "/tmp/document.pdf"
+      }
+    }
+  ]
+}
+```
+
+The resolver returns a readable local PDF.
+
+The resolver does not own:
+
+- artifact SHA-256 as the `pdfannex` lock authority;
+- artifact-store import;
+- lockfile persistence;
+- annex rendering.
+
+Those belong to the `pdfannex` CLI and `pdfannex.sty`.
+
+---
+
+# Batch Resolution
+
+Resolver Protocol 1 MUST accept multiple requests.
+
+Equivalent requests should be deduplicated before resolver invocation.
+
+Example:
+
+```text
+Annex A → Paperless 4711, pages 1–2
+Annex B → Paperless 4711, pages 8–10
+```
+
+means:
+
+```text
+2 semantic annexes
+1 source request
+1 acquired PDF artifact
+```
+
+Page selection is a presentation concern and MUST NOT alter source identity.
+
+---
+
+# Structured Resolver Errors
+
+The protocol distinguishes:
+
+```text
+resolver-level errors
+request-level errors
+```
+
+Request-level examples:
+
+```text
+resource-not-found
+authentication-required
+permission-denied
+invalid-source
+unsupported-source-option
+temporarily-unavailable
+```
+
+Resolver-level examples:
+
+```text
+unsupported-protocol
+invalid-request
+malformed-request
+resolver-internal-error
+```
+
+A missing required resource MUST ultimately fail the document build.
+
+It MUST NOT silently remove an annex.
+
+---
+
+# Partial Batch Failure
+
+Resolvers SHOULD return all per-request results they can obtain.
+
+Example:
+
+```text
+A → success
+B → resource-not-found
+C → success
+```
+
+The CLI may preserve successfully acquired immutable artifacts.
+
+However, transactional lock updates MUST NOT commit an incomplete new project state when required requests failed.
+
+---
+
+# Standard Streams
+
+Resolver Protocol 1 reserves:
+
+```text
+stdin   → machine request
+stdout  → protocol response only
+stderr  → human/debug diagnostics
+```
+
+Human logging MUST NOT contaminate stdout.
+
+---
+
+# Resolver Exit Status
+
+Recommended semantics:
+
+```text
+0
+    valid protocol response was produced
+
+non-zero
+    resolver-level failure prevented normal protocol completion
+```
+
+Per-request resource failures should normally appear in structured response data.
+
+---
+
+# Human Resource Lookup
+
+Human-readable search is intentionally **not part of Resolver Protocol 1**.
+
+For example:
+
+```text
+"Steuerbescheid 2025"
+```
+
+is not stable resource identity.
+
+Search should return candidates carrying stable identifiers.
+
+Conceptually:
+
+```text
+search("Steuerbescheid 2025")
+    ↓
+candidate resources
+    ↓
+user selects
+    ↓
+stable source locator
+```
+
+The resulting document should store something such as:
+
+```text
+pdfannex://paperless/4711
+```
+
+not the human title.
+
+Human lookup, autocomplete and resource browsing are important future integration scenarios but are out of scope for the CTAN package v0.1.
+
+---

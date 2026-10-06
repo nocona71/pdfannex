@@ -1,0 +1,6 @@
+{
+  "files.exclude": {},
+  "files.associations": { "*.sty": "latex" },
+  "languageTool.external.url": "http://synology-nas:8010",
+  "[markdown]": { "editor.wordWrap": "on" }
+}

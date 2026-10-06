@@ -1,0 +1,24 @@
+# Copilot instructions — pdfannex
+
+## Project
+`pdfannex` is a LaTeX package (`pdfannex.sty`) for including PDFs as annexes, plus an optional CLI and
+resolver protocol for external sources. The project is currently **spec-only** (no implementation yet).
+
+## Source of truth
+- The v0.1 spec is split by topic in `spec/` (start at `spec/index.md`). `spec-0.1.md` is the original
+  monolith and is kept only for reference; do not edit it, edit the files in `spec/`.
+- Normative terms (MUST/SHOULD/MAY) are meaningful. Use the terminology table in `spec/01-overview.md` consistently.
+- Priorities, in order: correctness, minimal user bootstrap, small stable interfaces, reuse of mature LaTeX
+  infrastructure, class independence, reproducibility, clear diagnostics, minimal complexity.
+- Core package must work with plain LaTeX tooling; external-source features must not increase its bootstrap burden.
+- Anything not required for v0.1 is out of scope.
+
+## Editing the spec
+- Keep each file in `spec/` under ~8 KB (LanguageTool on the NAS is slow, ~3.5 s/KB). Split by topic at
+  top-level `#` headings; update `spec/index.md` when adding/renaming files.
+- Don't open or lint `spec-0.1.md` in the editor (it is excluded from LanguageTool).
+- Cross-check requirement IDs/headings referenced between files when renaming sections.
+
+## Conventions
+- Markdown, English (en-US), fenced code blocks tagged with language (`latex`, `json`, `bash`).
+- LaTeX code: `fancy-anlagen.sty` is the legacy predecessor style, useful as reference only.

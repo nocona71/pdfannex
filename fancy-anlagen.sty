@@ -1,0 +1,144 @@
+% fancy-anlagen.sty
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{fancy-anlagen}[2026/09/15 PDF attachments with index and hierarchical bookmarks]
+
+\RequirePackage{pdfpages}
+\RequirePackage[hidelinks]{hyperref}
+\RequirePackage{bookmark}
+
+% --------------------------------------------------------------------------
+% Anlagenzähler
+% --------------------------------------------------------------------------
+
+\newcounter{anlage}
+
+% --------------------------------------------------------------------------
+% Anlagenliste aus AUX-Datei
+% --------------------------------------------------------------------------
+
+\newcommand{\AnlagenListe}{}
+
+\makeatletter
+
+\newcommand{\AnlageAuxEntry}[2]{%
+	\g@addto@macro\AnlagenListe{%
+		\AnlagePrintEntry{#1}{#2}%
+	}%
+}
+
+% First physical page of each attachment
+\newcommand{\AnlagePageAux}[2]{%
+	\expandafter\xdef\csname AnlagePage@#1\endcsname{#2}%
+}
+
+\newcommand{\AnlagePageNumber}[1]{%
+	\@ifundefined{AnlagePage@#1}%
+	{??}%
+	{\csname AnlagePage@#1\endcsname}%
+}
+
+% --------------------------------------------------------------------------
+% Link auf eine Anlage aus dem Fließtext
+%
+% Beispiel:
+% \AnlageLink{1}{vorläufiger Reha-Entlassungsbericht}
+% --------------------------------------------------------------------------
+
+\newcommand{\AnlageLink}[2]{%
+	\@ifundefined{AnlagePage@#1}%
+	{#2}%
+	{\hyperlink{page.\AnlagePageNumber{#1}}{#2}}%
+}
+
+
+% --------------------------------------------------------------------------
+% Sichtbarer Eintrag
+%
+% Ganze Zeile ist klickbar.
+% --------------------------------------------------------------------------
+
+\newcommand{\AnlagePrintEntry}[2]{%
+	\noindent
+	\@ifundefined{AnlagePage@#1}%
+	{%
+		Anlage #1: #2%
+		\nobreak\dotfill\nobreak
+		??%
+	}%
+	{%
+		\hyperlink{page.\AnlagePageNumber{#1}}{%
+			Anlage #1: #2%
+			\nobreak\dotfill\nobreak
+			\AnlagePageNumber{#1}%
+		}%
+	}%
+	\par
+}
+
+% --------------------------------------------------------------------------
+% Anlagenverzeichnis
+%
+% Bookmark:
+%   Anhänge
+% --------------------------------------------------------------------------
+
+\newcommand{\Anlagenverzeichnis}{%
+	\clearpage
+	%
+	\bookmarksetup{startatroot}%
+	\bookmark[
+	level=0,
+	page=\thepage
+	]{Anhänge}%
+	%
+	{\Large\bfseries Anlagen\par}
+	\vspace{1em}%
+	\AnlagenListe
+}
+
+% --------------------------------------------------------------------------
+% Anlage
+%
+% \Anlage{datei.pdf}{Titel}
+% \Anlage[1-2]{datei.pdf}{Titel}
+%
+% Bookmark-Struktur:
+%
+%   Anhänge
+%       Anhang 1: Titel
+%       Anhang 2: Titel
+%       ...
+% --------------------------------------------------------------------------
+
+\newcommand{\Anlage}[3][-]{%
+	\stepcounter{anlage}%
+	%
+	% Eintrag für das sichtbare Anlagenverzeichnis
+	\protected@write\@auxout{}{%
+		\string\AnlageAuxEntry
+		{\theanlage}%
+		{\unexpanded{#3}}%
+	}%
+	%
+	% PDF einfügen
+	\includepdf[
+	pages=#1,
+	picturecommand*={%
+		%
+		% Physische Startseite dieser Anlage merken
+		\protected@write\@auxout{}{%
+			\string\AnlagePageAux
+			{\theanlage}%
+			{\thepage}%
+		}%
+		%
+		% Untergeordneter Bookmark mit sprechendem Namen
+		\bookmark[
+		level=1,
+		page=\thepage
+		]{Anhang \theanlage: #3}%
+	}%
+	]{Anlagen/#2}%
+}
+
+\makeatother
