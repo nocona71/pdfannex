@@ -12,3 +12,7 @@
 ## Step 3 progress
 - `tex/pdfannex.sty` expl3 skeleton: include, labels/refs, bookmarks, `\listofannexes` (via aux) work with pdflatex.
 - TODO: layouts beyond fullpage, l3build tests, xetex/luatex checks.
+
+## l3build
+- `testfiles/annex-basic.lvt`: 3 annexes, three layouts, counters; passes on pdftex/luatex/xetex (checkruns=2). Fixtures in `testfiles/support/`.
+- Open: `margin`/`footer-space` keys, ref/list content assertions, decision 0005 (aux-based list instead of `.loa`).

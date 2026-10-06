@@ -9,7 +9,8 @@ installfiles = { "pdfannex.sty" }
 typesetfiles = { "pdfannex-doc.tex" }
 
 checkengines = { "pdftex", "luatex", "xetex" }
-checkruns = 1
+checkruns = 2
+supportdir = "testfiles/support"
 
 textfiles = {
   "README.md",

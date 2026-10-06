@@ -1,0 +1,12 @@
+\documentclass{article}
+\usepackage{pdfannex}
+\input{regression-test}
+\begin{document}
+\includeannex[label=one]{a1.pdf}{First}
+\includeannex[label=three,layout=footer-safe]{a3.pdf}{Third}
+\includeannex[layout=framed]{a1.pdf}{Framed}
+\START
+\typeout{pages=\the\value{page} annexes=\the\value{annex}}
+\listofannexes
+\typeout{ref=\expandafter\detokenize\expandafter{\annexref{three}}}
+\end{document}
