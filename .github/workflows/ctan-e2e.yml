@@ -32,8 +32,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-        with:
-          ref: ${{ inputs.release_tag }}
 
       - name: Get CTAN archive from earlier job
         if: inputs.artifact != ''
