@@ -23,3 +23,8 @@ resolver protocol for external sources. The LaTeX package is implemented (v0.1 i
 
 ## Documentation rule
 Record every design/process decision as a file in `docs/decisions/` (update its README table) and experiment findings in `docs/`. Capture plans and open items in the repo so work can resume after an interruption.
+
+## Commits and releases
+- Use Conventional Commits: `feat:`, `fix:`, `docs:`, `test:`, `ci:`, `chore:`, `refactor:`. release-please reads them on `main` to open the release PR and bump the version (`feat` -> minor, `fix` -> patch while pre-1.0).
+- Tags are `pdfannex-vX.Y.Z`. Never edit `VERSION`, the version in `tex/pdfannex.sty`/`doc/pdfannex-doc.tex`, `CHANGELOG.md` or the manifest by hand; the release PR does it.
+- Add a `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>` trailer to Copilot commits.
