@@ -107,6 +107,15 @@
     \group_end:
   }
 
+% \NewAnnexSource{\includefoo}{foo} defines \includefoo[opts]{ref}{title} as
+% \includeannex[opts]{pdfannex://foo/ref}{title}. The scheme is any name; the
+% CLI looks for the matching resolver, TeX never needs to know it.
+\NewDocumentCommand \NewAnnexSource { m m }
+  {
+    \NewDocumentCommand #1 { O{} m m }
+      { \includeannex [ ##1 ] { pdfannex:// #2 / ##2 } { ##3 } }
+  }
+
 % Source handling. Plain paths mean pdfannex://file/<path>. The source is
 % recorded for the optional CLI; if the CLI locked it, the stored artifact in
 % the resolution map is used instead of the original path.

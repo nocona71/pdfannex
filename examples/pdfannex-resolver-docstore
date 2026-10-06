@@ -1,0 +1,100 @@
+#!/usr/bin/env texlua
+-- Example Resolver Protocol 1 resolver and fork-start for community adapters.
+--
+-- Serves pdfannex://docstore/<id>[?rev=<n>] from $PDFANNEX_DOCSTORE_DIR
+-- (default ./docstore) laid out as <dir>/<id>/<n>.pdf. Without rev the latest
+-- revision is chosen and pinned in the resolved locator, which is what the lock
+-- records. To write your own adapter, replace the body of `lookup`; everything
+-- else is protocol plumbing. Hashing and storage belong to the CLI.
+local script_dir = (arg[0] or ""):match("^(.*)/[^/]*$") or "."
+package.path = script_dir .. "/../cli/?.lua;" .. script_dir .. "/?.lua;" .. package.path
+local lib = require("pdfannex-lib")
+
+local VERSION = "0.1.0"
+local SCHEME = "docstore"
+
+local function reply(obj) io.stdout:write(lib.json_encode(obj), "\n") end
+local function fail(id, code, message) return { id = id, error = { code = code, message = message } } end
+
+local function latest_revision(dir)
+  local best
+  for name in lfs.dir(dir) do
+    local n = name:match("^(%d+)%.pdf$")
+    if n and (not best or tonumber(n) > tonumber(best)) then best = n end
+  end
+  return best
+end
+
+-- Adapter-specific part. Returns { path, rev, id, latest } or nil, code, message.
+local function lookup(source)
+  local id, query = source:match("^pdfannex://" .. SCHEME .. "/([^?]*)%??(.*)$")
+  if not id or not id:match("^[%w_%-]+$") then
+    return nil, "invalid-source", "expected pdfannex://" .. SCHEME .. "/<id>"
+  end
+  local rev
+  for key, value in query:gmatch("([^&=]+)=?([^&]*)") do
+    if key ~= "rev" or not value:match("^%d+$") then
+      return nil, "unsupported-source-option", "unsupported option: " .. key
+    end
+    rev = value
+  end
+  local root = os.getenv("PDFANNEX_DOCSTORE_DIR") or "docstore"
+  local dir = root .. "/" .. id
+  if lfs.attributes(dir, "mode") ~= "directory" then
+    return nil, "resource-not-found", "no document " .. id
+  end
+  local latest = latest_revision(dir)
+  rev = rev or latest
+  local path = dir .. "/" .. tostring(rev) .. ".pdf"
+  if not rev or lfs.attributes(path, "mode") ~= "file" then
+    return nil, "resource-not-found", "no revision " .. tostring(rev) .. " of " .. id
+  end
+  if path:sub(1, 1) ~= "/" then path = lfs.currentdir() .. "/" .. path end
+  return { path = path, rev = rev, id = id, latest = latest }
+end
+
+local function resolve_one(req)
+  local doc, code, message = lookup(req.source or "")
+  if not doc then return fail(req.id, code, message) end
+  return { id = req.id, resolved = "pdfannex://" .. SCHEME .. "/" .. doc.id .. "?rev=" .. doc.rev,
+           artifact = { path = doc.path } }
+end
+
+-- Compare the locked revision with the latest one.
+local function status_one(req)
+  local doc, code, message = lookup(req.source or "")
+  if not doc then return fail(req.id, code, message) end
+  local locked = (req.resolved or ""):match("[?&]rev=(%d+)$")
+  if not locked then return { id = req.id, state = "unknown" } end
+  return { id = req.id, state = tonumber(locked) >= tonumber(doc.latest) and "up-to-date" or "update-available" }
+end
+
+local ok, request = pcall(lib.json_decode, io.stdin:read("a"))
+if not ok or type(request) ~= "table" then
+  io.stderr:write("pdfannex-resolver-" .. SCHEME .. ": malformed request\n")
+  reply({ error = { code = "malformed-request", message = "stdin is not a JSON object" } })
+  os.exit(1)
+end
+
+local op = request.operation
+if op == "describe" then
+  reply({ resolver = { name = SCHEME, version = VERSION }, protocolVersions = { 1 },
+          schemes = { SCHEME }, capabilities = { "resolve", "status" } })
+elseif op == "resolve" or op == "status" then
+  if request.protocolVersion ~= 1 then
+    reply({ error = { code = "unsupported-protocol", message = "only protocol version 1 is supported" } })
+    os.exit(1)
+  end
+  if type(request.requests) ~= "table" then
+    reply({ error = { code = "invalid-request", message = "requests must be an array" } })
+    os.exit(1)
+  end
+  local results = {}
+  for i, req in ipairs(request.requests) do
+    results[i] = (op == "resolve" and resolve_one or status_one)(req)
+  end
+  reply({ protocolVersion = 1, results = results })
+else
+  reply({ error = { code = "invalid-request", message = "unknown operation: " .. tostring(op) } })
+  os.exit(1)
+end

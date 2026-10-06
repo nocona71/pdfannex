@@ -36,6 +36,15 @@ includes all pages of \emph{file} (or those selected by \texttt{pages}) as one
 annex.
 
 
+\verb|\NewAnnexSource{|\emph{command}\verb|}{|\emph{scheme}\verb|}|
+defines \emph{command} like \verb|\includeannex|, but its first mandatory
+argument is a reference served by an external resolver:
+\verb|\NewAnnexSource{\includedoc}{docstore}| makes
+\verb|\includedoc{42}{Title}| equal to
+\verb|\includeannex{pdfannex://docstore/42}{Title}|. The package accepts any
+scheme name; the optional command-line tool finds the resolver program.
+
+
 \verb|\pdfannexsetup{|\emph{options}\verb|}| sets defaults for later annexes.
 
 
