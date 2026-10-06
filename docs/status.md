@@ -5,7 +5,7 @@
 - [ ] 3 `pdfannex.sty` skeleton + `l3build` tests (pdflatex, lualatex, xelatex)
 - [ ] 4 CTAN packaging
 - [ ] 5 Phases B/C deferred
-- [ ] 6 Copilot `.instructions.md` files
+- [x] 6 Copilot `.instructions.md` files (`.github/instructions/`)
 
 - [x] Infra adoption: devcontainer, CI, release-please, l3build skeleton (`make check` passes; decision 0004)
 

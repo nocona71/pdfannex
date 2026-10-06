@@ -2,7 +2,7 @@
 
 ## Project
 `pdfannex` is a LaTeX package (`pdfannex.sty`) for including PDFs as annexes, plus an optional CLI and
-resolver protocol for external sources. The project is currently **spec-only** (no implementation yet).
+resolver protocol for external sources. The LaTeX package is implemented (v0.1 in development); the CLI and resolver protocol are still spec-only.
 
 ## Source of truth
 - The v0.1 spec is split by topic in `spec/` (start at `spec/index.md`). Edit the files in `spec/`.
