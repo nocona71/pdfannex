@@ -1,4 +1,4 @@
-.PHONY: check test smoke doc package install clean
+.PHONY: check test smoke e2e doc package install clean
 
 check:
 	./scripts/check
@@ -8,6 +8,9 @@ test:
 
 smoke:
 	./scripts/smoke-tex
+
+e2e: package
+	./scripts/e2e-ctan build/pdfannex-ctan.zip
 
 doc:
 	./scripts/run-l3build doc

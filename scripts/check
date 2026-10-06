@@ -14,3 +14,4 @@ python3 testfiles/test_geometry.py
 python3 testfiles/test_pagination.py
 python3 testfiles/test_dod.py
 ./scripts/smoke-tex
+shellcheck scripts/e2e-ctan

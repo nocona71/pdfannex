@@ -35,3 +35,6 @@ jobs:
       - name: Build documentation
         run: make doc
 
+  ctan-e2e:
+    needs: check
+    uses: ./.github/workflows/ctan-e2e.yml

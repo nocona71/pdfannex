@@ -18,4 +18,4 @@ Run LaTeX twice to resolve references.
  See `doc/pdfannex-doc.tex` for options.
 
 Status: v0.1 in development. Specification: [spec/index.md](spec/index.md).
-Development: `make check` (smoke tests), `make test` (l3build), `make doc`, `make package`.
+Development: `make check` (smoke tests), `make e2e` (install the CTAN archive into a clean TEXMFHOME and build with it), `make test` (l3build), `make doc`, `make package`.

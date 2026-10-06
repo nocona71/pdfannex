@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# End-to-end test of a CTAN archive as a user would consume it: unpack the
+# archive, install the package into an empty TEXMFHOME, and build documents
+# without any repository files on the TeX search path.
+set -euo pipefail
+
+if [[ $# -ne 1 || ! -f "$1" ]]; then
+  echo "usage: e2e-ctan <pdfannex-ctan.zip>" >&2
+  exit 2
+fi
+archive="$(cd -- "$(dirname -- "$1")" && pwd)/$(basename -- "$1")"
+
+work="$(mktemp -d)"
+trap 'rm -rf "$work"' EXIT
+export HOME="$work/home"
+export TEXMFHOME="$HOME/texmf"
+export TEXMFVAR="$HOME/texmf-var"
+export TEXMFCONFIG="$HOME/texmf-config"
+unset TEXINPUTS
+mkdir -p "$HOME"
+
+step() { echo "==> $*"; }
+fail() { echo "FAIL: $*" >&2; exit 1; }
+
+step "unpack archive"
+mkdir "$work/unpacked"
+unzip -q "$archive" -d "$work/unpacked"
+pkg="$work/unpacked/pdfannex"
+for f in pdfannex.sty pdfannex-doc.tex pdfannex-doc.pdf README.md LICENSE CHANGELOG.md; do
+  [[ -s "$pkg/$f" ]] || fail "archive misses $f"
+done
+
+step "package is not visible before installation"
+if kpsewhich pdfannex.sty >/dev/null; then
+  fail "pdfannex.sty already installed on this system"
+fi
+
+step "install into TEXMFHOME"
+mkdir -p "$TEXMFHOME/tex/latex/pdfannex" "$TEXMFHOME/doc/latex/pdfannex"
+cp "$pkg/pdfannex.sty" "$TEXMFHOME/tex/latex/pdfannex/"
+cp "$pkg"/{pdfannex-doc.pdf,README.md} "$TEXMFHOME/doc/latex/pdfannex/"
+[[ "$(kpsewhich pdfannex.sty)" == "$TEXMFHOME/tex/latex/pdfannex/pdfannex.sty" ]] \
+  || fail "kpsewhich does not find the installed package"
+
+version="$(sed -n 's/.*\\ProvidesPackage{pdfannex}\[[^ ]* v\([0-9.]*\) .*/\1/p' "$pkg/pdfannex.sty")"
+[[ -n "$version" ]] || fail "cannot read package version"
+echo "installed pdfannex $version"
+grep -q "Version $version" "$pkg/pdfannex-doc.tex" || fail "manual version differs from package"
+
+step "create sample annex PDFs"
+cd "$work"
+mkdir doc && cd doc
+for spec in "letter-sized-contract:letterpaper" "legal-sized-report:legalpaper"; do
+  name="${spec%%:*}"; paper="${spec##*:}"
+  printf '%s' "\\documentclass{article}\\usepackage[$paper,margin=0pt]{geometry}\\pagestyle{empty}\\begin{document}\\rule{3cm}{3cm}\\newpage\\rule{3cm}{3cm}\\newpage\\rule{3cm}{3cm}\\newpage\\rule{3cm}{3cm}\\end{document}" \
+    >"$name.tex"
+  pdflatex -interaction=batchmode "$name.tex" >/dev/null
+done
+cat >document.tex <<'T'
+\documentclass[a4paper]{article}
+\usepackage{pdfannex}
+\pdfannexsetup{ heading=Annexes, layout=footer-safe, page-style=plain }
+\begin{document}
+Main document.
+
+See \annexref{contract}.
+
+\listofannexes
+
+\includeannex[ label=contract ]{letter-sized-contract.pdf}{ Contract }
+
+\includeannex[ label=report, pages=1-3, frame=true ]{legal-sized-report.pdf}{ Report }
+\end{document}
+T
+
+for engine in pdf xelatex lualatex; do
+  flag="-$engine"
+  [[ "$engine" == pdf ]] && flag="-pdf"
+  step "build with latexmk $flag"
+  rm -f document.aux document.log document.out document.pdf document.fls document.fdb_latexmk
+  latexmk "$flag" -interaction=nonstopmode -halt-on-error document.tex >latexmk.out 2>&1 \
+    || { tail -30 latexmk.out >&2; fail "latexmk $flag failed"; }
+  pages="$(pdfinfo document.pdf | awk '/^Pages:/{print $2}')"
+  [[ "$pages" == 8 ]] || fail "$flag: expected 8 pages, got $pages"
+  text="$(pdftotext -f 1 -l 1 document.pdf -)"
+  for expected in "See Annex 1." "Annex 1: Contract" "Annex 2: Report"; do
+    grep -qF "$expected" <<<"$text" || fail "$flag: first page misses '$expected'"
+  done
+  pdfinfo -f 1 -l 8 document.pdf | grep "^Page .*size:" | grep -qv "A4" \
+    && fail "$flag: an annex page does not keep the A4 sheet size"
+  # A converged document needs no further run.
+  latexmk "$flag" -interaction=nonstopmode document.tex 2>&1 | grep -q "Run number" \
+    && fail "$flag: second latexmk run rebuilt a converged document"
+done
+
+step "build the shipped manual from source"
+mkdir "$work/manual" && cp "$pkg/pdfannex-doc.tex" "$work/manual/"
+(cd "$work/manual" && latexmk -pdf -interaction=nonstopmode -halt-on-error pdfannex-doc.tex >/dev/null) \
+  || fail "manual does not build from the archive"
+
+echo "OK: pdfannex $version passes the end-to-end test"

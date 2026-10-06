@@ -1,0 +1,60 @@
+name: CTAN archive end-to-end test
+
+# Installs the CTAN archive into a fresh Ubuntu container with only the TeX
+# Live packages a user would have, and builds documents with it.
+on:
+  workflow_call:
+    inputs:
+      release_tag:
+        description: Release tag whose archive to test; empty builds the archive from the checkout
+        required: false
+        default: ""
+        type: string
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Release tag whose archive to test (for example pdfannex-v0.1.0); empty builds from the checkout
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag }}
+
+      - name: Get CTAN archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          mkdir archive
+          if [[ -n "$RELEASE_TAG" ]]; then
+            gh release download "$RELEASE_TAG" --pattern 'pdfannex-ctan-v*.zip' --dir archive
+          else
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends \
+              latexmk make poppler-utils texlive-extra-utils texlive-fonts-recommended \
+              texlive-latex-base texlive-latex-extra texlive-luatex texlive-xetex
+            make package
+            cp build/pdfannex-ctan.zip archive/
+          fi
+          ls -l archive
+
+      - name: Test archive in a clean container
+        run: |
+          docker run --rm -v "$PWD:/w:ro" ubuntu:24.04 bash -euxo pipefail -c '
+            apt-get update
+            DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+              latexmk poppler-utils unzip texlive-fonts-recommended texlive-latex-base \
+              texlive-latex-extra texlive-luatex texlive-xetex
+            /w/scripts/e2e-ctan /w/archive/*.zip
+          '
