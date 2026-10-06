@@ -184,17 +184,29 @@ function M.looks_like_pdf(data)
 end
 
 ---------------------------------------------------------------- sources
--- Sources are written to TeX-readable generated files, so only characters
--- that are safe in a TeX argument and a shell word are accepted.
-function M.valid_source(src)
-  return src:find("^[%w%._/:%?=&%+,@%-]+$") ~= nil
+-- pdfannex.sty exchanges sources hex-encoded (UTF-8 bytes), so any file name
+-- is safe in the generated TeX files.
+function M.hex_encode(s)
+  return (s:gsub(".", function(c) return string.format("%02X", c:byte()) end))
 end
 
--- A plain path in \includeannex means pdfannex://file/<path>.
+function M.hex_decode(h)
+  if #h % 2 ~= 0 or h:find("%X") then return nil end
+  return (h:gsub("%x%x", function(x) return string.char(tonumber(x, 16)) end))
+end
+
+function M.pct_encode(s)
+  return (s:gsub("[^%w%-%._~/]", function(c) return string.format("%%%02X", c:byte()) end))
+end
+
+function M.pct_decode(s)
+  return (s:gsub("%%(%x%x)", function(x) return string.char(tonumber(x, 16)) end))
+end
+
+-- A plain path as written in \includeannex means pdfannex://file/<path>.
 function M.normalize_source(src)
   if src:find("^pdfannex://") then return src end
-  while src:sub(1, 2) == "./" do src = src:sub(3) end
-  return "pdfannex://file/" .. src
+  return "pdfannex://file/" .. M.pct_encode(src)
 end
 
 function M.source_scheme(src)

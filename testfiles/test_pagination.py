@@ -5,10 +5,13 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "testfiles"))
+import locked  # noqa: E402
 DOC = r"""\documentclass{scrlttr2}
 \usepackage{pdfannex}
 \begin{document}
@@ -26,6 +29,7 @@ def annex_page(mode):
         shutil.copy(ROOT / "testfiles/support/a3.pdf", work)
         (work / "l.tex").write_text(DOC % mode)
         env = {"PATH": os.environ["PATH"], "HOME": tmp, "TEXINPUTS": f"{ROOT / 'tex'}:"}
+        locked.lock_inputs(work, "l", env, ["pdflatex", "-interaction=nonstopmode", "l.tex"])
         for _ in range(2):
             subprocess.run(["pdflatex", "-interaction=nonstopmode", "-halt-on-error", "l.tex"],
                            cwd=work, check=True, capture_output=True, env=env)

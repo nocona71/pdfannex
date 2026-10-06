@@ -3,10 +3,13 @@
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "testfiles"))
+import locked  # noqa: E402
 RULE = (
     r"\documentclass{article}\usepackage[%s,margin=0pt]{geometry}"
     r"\pagestyle{empty}\setlength\parindent{0pt}"
@@ -50,6 +53,7 @@ class Geometry(unittest.TestCase):
         (cls.dir / "host.tex").write_text(HOST)
         env = {"PATH": __import__("os").environ["PATH"], "HOME": str(cls.dir),
                "TEXINPUTS": f"{ROOT / 'tex'}:"}
+        locked.lock_inputs(cls.dir, "host", env, ["pdflatex", "-interaction=nonstopmode", "host.tex"])
         run(["pdflatex", "-interaction=nonstopmode", "-halt-on-error", "host.tex"], cls.dir, env)
         run(["pdftoppm", "-r", "72", "-gray", "host.pdf", "p"], cls.dir)
 

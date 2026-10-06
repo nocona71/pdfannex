@@ -40,6 +40,11 @@ def latex(cwd, source="a.pdf"):
     return sh(["pdflatex", "-interaction=nonstopmode", "-halt-on-error", "host.tex"], cwd, check=False)
 
 
+def write_requests(cwd, *sources):
+    (Path(cwd) / "host.pdfannex-requests").write_text(
+        "".join(s.encode().hex().upper() + "\n" for s in sources))
+
+
 def cli(cwd, *args, check=True):
     return sh(["texlua", str(CLI), *args], cwd, check=check)
 
@@ -137,11 +142,38 @@ class Cli(unittest.TestCase):
     def test_failed_batch_keeps_old_lock(self):
         self.lock()
         before = (self.d / "pdfannex.lock").read_text()
-        (self.d / "host.pdfannex-requests").write_text("a.pdf\nmissing.pdf\n")
+        write_requests(self.d, "a.pdf", "missing.pdf")
         run = cli(self.d, "update", "host.tex", check=False)
         self.assertNotEqual(run.returncode, 0)
         self.assertIn("resource-not-found", run.stderr)
         self.assertEqual((self.d / "pdfannex.lock").read_text(), before)
+
+    def test_unusual_file_names(self):
+        (self.d / "sub dir").mkdir()
+        names = ["sub dir/Steuerbescheid 2025 \u00dc.pdf", "100%.pdf", "a&b#c_d.pdf", "x?y=1.pdf"]
+        for i, name in enumerate(names):
+            pdf(self.d, f"n{i}", f"NAME{i}")
+            shutil.move(self.d / f"n{i}.pdf", self.d / name)
+        tex = "".join(r"\includeannex[page-style=empty]{%s}{N%d}" % (
+            n.replace("%", r"\%").replace("#", r"\#").replace("&", r"\&").replace("_", r"\_"), i) for i, n in enumerate(names))
+        (self.d / "host.tex").write_text(
+            r"\documentclass{article}\usepackage[utf8]{inputenc}\usepackage{pdfannex}"
+            r"\begin{document}" + tex + r"\end{document}")
+        build = lambda eng: sh([eng, "-interaction=nonstopmode", "-halt-on-error", "host.tex"],
+                               self.d, check=False)
+        build("pdflatex")
+        cli(self.d, "prepare", "host.tex")
+        for n in names:
+            (self.d / n).unlink()   # only the store can satisfy the build now
+        for engine in ("pdflatex", "xelatex", "lualatex"):
+            with self.subTest(engine=engine):
+                (self.d / "host.pdfannex-requests").unlink()
+                self.assertEqual(build(engine).returncode, 0)
+                out = text(self.d)
+                for i in range(len(names)):
+                    self.assertIn(f"NAME{i}", out)
+                # Every engine must write the same requests the CLI locked.
+                cli(self.d, "verify", "host.tex")
 
     def test_non_pdf_is_rejected(self):
         (self.d / "a.pdf").write_text("not a pdf")
@@ -152,7 +184,7 @@ class Cli(unittest.TestCase):
 
     def test_unknown_scheme_needs_a_resolver(self):
         latex(self.d)
-        (self.d / "host.pdfannex-requests").write_text("pdfannex://nowhere/1\n")
+        write_requests(self.d, "pdfannex://nowhere/1")
         run = cli(self.d, "prepare", "host.tex", check=False)
         self.assertNotEqual(run.returncode, 0)
         self.assertIn("pdfannex-resolver-nowhere", run.stderr)

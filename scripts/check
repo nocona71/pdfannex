@@ -15,5 +15,10 @@ python3 testfiles/test_pagination.py
 python3 testfiles/test_nup.py
 python3 testfiles/test_cli.py
 python3 testfiles/test_dod.py
+
+# Same suites with sources locked through the CLI and original PDFs deleted.
+for t in geometry pagination nup dod; do
+  PDFANNEX_TEST_LOCKED=1 python3 "testfiles/test_$t.py"
+done
 ./scripts/smoke-tex
 shellcheck scripts/e2e-ctan

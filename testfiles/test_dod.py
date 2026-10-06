@@ -4,10 +4,13 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "testfiles"))
+import locked  # noqa: E402
 SOURCE = r"""\documentclass{article}\usepackage[%s,margin=0pt]{geometry}\pagestyle{empty}
 \begin{document}\rule{3cm}{3cm}\newpage\rule{3cm}{3cm}\newpage\rule{3cm}{3cm}\newpage\rule{3cm}{3cm}\end{document}
 """
@@ -44,6 +47,7 @@ class DefinitionOfDone(unittest.TestCase):
                     (work / f"{name}.tex").write_text(SOURCE % paper)
                     tool(["pdflatex", "-interaction=batchmode", f"{name}.tex"], work, env)
                 (work / "document.tex").write_text(DOC)
+                locked.lock_inputs(work, "document", env, ["pdflatex", "-interaction=nonstopmode", "document.tex"])
                 tool(["latexmk", flag, "-interaction=nonstopmode", "-halt-on-error", "document.tex"],
                      work, env)
                 info = tool(["pdfinfo", "document.pdf"], work, env)

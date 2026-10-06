@@ -19,6 +19,7 @@ end
 -- Returns the project-relative path or nil, code, message.
 local function locate(source)
   local path, query = source:match("^pdfannex://file/([^?]*)%??(.*)$")
+  path = path and lib.pct_decode(path)
   if not path or path == "" then
     return nil, "invalid-source", "expected pdfannex://file/<path>"
   end

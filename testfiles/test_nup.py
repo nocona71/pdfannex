@@ -4,10 +4,13 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "testfiles"))
+import locked  # noqa: E402
 SRC = (
     r"\documentclass[a5paper]{article}\pagestyle{empty}"
     r"\begin{document}\Large P1\newpage P2\newpage P3\newpage P4\end{document}"
@@ -37,6 +40,7 @@ class Nup(unittest.TestCase):
                            check=True, capture_output=True)
             (d / "host.tex").write_text(HOST)
             env = {"PATH": os.environ["PATH"], "HOME": tmp, "TEXINPUTS": f"{ROOT / 'tex'}:"}
+            locked.lock_inputs(d, "host", env, ["pdflatex", "-interaction=nonstopmode", "host.tex"])
             for _ in range(2):
                 subprocess.run(["pdflatex", "-interaction=nonstopmode", "-halt-on-error",
                                 "host.tex"], cwd=d, check=True, capture_output=True, env=env)
