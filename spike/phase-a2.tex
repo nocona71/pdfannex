@@ -1,0 +1,9 @@
+\documentclass{article}
+\usepackage{pdfannex}
+\begin{document}
+Body. See \annexref{three} on page \annexpageref{three}.
+\newpage
+\listofannexes
+\includeannex[label=one]{../testfiles/support/a1.pdf}{First}
+\includeannex[label=three]{../testfiles/support/a3.pdf}{Third}
+\end{document}

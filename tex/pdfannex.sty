@@ -28,6 +28,7 @@
 \tl_new:N \l__pdfannex_pagination_tl
 \bool_new:N \l__pdfannex_bookmark_bool
 \bool_new:N \l__pdfannex_list_bool
+\bool_new:N \g__pdfannex_first_bool
 
 \tl_set:Nn \l__pdfannex_annexname_tl { Annex }
 \tl_set:Nn \l__pdfannex_heading_tl { Annexes }
@@ -64,6 +65,7 @@
       \file_if_exist:nF { #2 }
         { \msg_error:nnn { pdfannex } { file-not-found } { #2 } }
       \stepcounter { annex }
+      \bool_gset_true:N \g__pdfannex_first_bool
       \__pdfannex_include:n { #2 }
     \group_end:
   }
@@ -74,8 +76,7 @@
       {
         \__pdfannex_layout_opts: ,
         pages = \l__pdfannex_pages_tl ,
-        pagecommand* = { \exp_not:N \__pdfannex_first_page: } ,
-        pagecommand  = { \exp_not:N \thispagestyle { \l__pdfannex_pagestyle_tl } } ,
+        pagecommand = { \exp_not:N \__pdfannex_page_hook: } ,
       }
       { #1 }
   }
@@ -94,10 +95,19 @@
       { fitpaper = true }
   }
 
-% Runs once per annex, on its first inserted page.
-\cs_new_protected:Npn \__pdfannex_first_page:
+% pdfpages has no first-page-only pagecommand (only picturecommand*, which runs
+% at shipout), so run first-page work once per annex via a global flag.
+\cs_new_protected:Npn \__pdfannex_page_hook:
   {
     \thispagestyle { \l__pdfannex_pagestyle_tl }
+    \bool_if:NT \g__pdfannex_first_bool
+      {
+        \bool_gset_false:N \g__pdfannex_first_bool
+        \__pdfannex_first_page:
+      }
+  }
+\cs_new_protected:Npn \__pdfannex_first_page:
+  {
     \hypertarget { pdfannex.\theannex } { }
     \tl_if_empty:NF \l__pdfannex_label_tl
       {

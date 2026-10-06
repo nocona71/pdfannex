@@ -56,7 +56,7 @@ Do not create a competing rendering path with `\includegraphics`.
 
 # First-Page Processing
 
-Use current `pdfpages` first-page facilities such as `pagecommand*` where suitable.
+`pdfpages` has no first-page-only `pagecommand*` (only `picturecommand*`, which runs at shipout). Use `pagecommand` with a global once-per-annex flag (decision 0006).
 
 First-page work includes:
 
