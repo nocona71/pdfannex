@@ -12,6 +12,7 @@ it needs `texlua` (TeX Live) and `curl`, plus Python 3 for the mock server and t
 | `docstore_server.py` | Mock document service (HTTP) with fault injection, for tests and demos |
 | `conformance.py` | Generic protocol conformance check for any resolver |
 | `test_docstore.py` | Module tests of the adapter alone (`make test`) |
+| `test_integration.py` | Plain files and docstore documents in one document, with the real pdfannex package and CLI (`PDFANNEX_HOME`, default `..`; skipped if absent) |
 | `pdfannex-docstore.sty` | Optional: a nicer command name for the scheme |
 
 ## What the example serves

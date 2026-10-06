@@ -1,4 +1,4 @@
-"""End-to-end tests of the pdfannex CLI (built-in file handling) and the docstore example."""
+"""End-to-end tests of the pdfannex CLI (built-in file handling)."""
 
 import json
 import os
@@ -10,11 +10,8 @@ import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "adapter-example"))
-from docstore_server import DocstoreServer  # noqa: E402
 
 CLI = ROOT / "cli" / "pdfannex"
-DOCSTORE = ROOT / "adapter-example" / "pdfannex-resolver-docstore"
 NEEDS = shutil.which("texlua") and shutil.which("pdflatex") and shutil.which("pdftotext")
 
 SRC = r"\documentclass{article}\pagestyle{empty}\begin{document}%s\end{document}"
@@ -189,112 +186,6 @@ class Cli(unittest.TestCase):
         run = latex(self.d, "pdfannex://paperless/1")
         self.assertNotEqual(run.returncode, 0)
         self.assertIn("is not resolved", run.stdout)
-
-
-DOC_HOST = r"""\documentclass{article}\usepackage{pdfannex}
-\NewAnnexSource{\includedoc}{docstore}
-\begin{document}
-\includedoc[page-style=empty]{memo}{Memo}
-\includeannex[page-style=empty]{pdfannex://docstore/memo?rev=1}{Old memo}
-\includeannex[page-style=empty]{a.pdf}{Plain}
-\end{document}
-"""
-
-
-@unittest.skipUnless(NEEDS and shutil.which("curl"), "texlua/pdflatex/pdftotext/curl missing")
-class DocstoreExample(unittest.TestCase):
-    def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
-        self.d = Path(self.tmp.name)
-        self.store = self.d / "store" / "memo"
-        self.store.mkdir(parents=True)
-        for rev, word in ((1, "FIRST"), (2, "SECOND")):
-            pdf(self.d, f"r{rev}", word)
-            (self.d / f"r{rev}.pdf").rename(self.store / f"{rev}.pdf")
-        pdf(self.d, "a", "ALPHA")
-        (self.d / "host.tex").write_text(DOC_HOST)
-        self.server = DocstoreServer(self.d / "store", "tok").start()
-        self.env = dict(os.environ, PATH=f"{DOCSTORE.parent}:{os.environ['PATH']}",
-                        PDFANNEX_DOCSTORE_URL=self.server.url, PDFANNEX_DOCSTORE_TOKEN="tok")
-        cli(self.d, "init")
-
-    def tearDown(self):
-        self.server.stop()
-        self.tmp.cleanup()
-
-    def run_cli(self, *args):
-        return subprocess.run(["texlua", str(CLI), *args], cwd=self.d, env=self.env,
-                              capture_output=True, text=True)
-
-    def build(self):
-        # No -halt-on-error: the first build reports unresolved URIs but still records every request.
-        sh(["pdflatex", "-interaction=nonstopmode", "host.tex"], self.d, check=False)
-
-    def test_alias_pins_revisions_and_detects_updates(self):
-        self.build()
-        self.assertEqual(self.run_cli("prepare", "host.tex").returncode, 0)
-        lock = json.loads((self.d / "pdfannex.lock").read_text())
-        self.assertEqual(lock["sources"]["pdfannex://docstore/memo"]["resolved"],
-                         "pdfannex://docstore/memo?rev=2")
-        # A new revision and removed originals must not change the build.
-        pdf(self.d, "r3", "THIRD")
-        (self.d / "r3.pdf").rename(self.store / "3.pdf")
-        status = self.run_cli("status", "host.tex").stdout
-        self.assertIn("update-available pdfannex://docstore/memo\n", status)
-        self.assertIn("up-to-date", status)
-        shutil.rmtree(self.store)
-        (self.d / "a.pdf").unlink()
-        for aux in ("host.aux", "host.pdf"):
-            (self.d / aux).unlink(missing_ok=True)
-        self.build()
-        out = text(self.d)
-        for word in ("SECOND", "FIRST", "ALPHA"):
-            self.assertIn(word, out)
-        self.assertNotIn("THIRD", out)
-
-    def test_tampered_revision_is_rejected_by_the_cli(self):
-        self.build()
-        self.run_cli("prepare", "host.tex")
-        shutil.rmtree(self.d / ".pdfannex/objects")
-        pdf(self.d, "evil", "EVIL")
-        (self.d / "evil.pdf").replace(self.store / "2.pdf")
-        run = self.run_cli("prepare", "host.tex")
-        self.assertNotEqual(run.returncode, 0)
-        self.assertIn("hash mismatch", run.stderr)
-
-    def test_locked_build_needs_neither_resolver_nor_server(self):
-        self.build()
-        self.run_cli("prepare", "host.tex")
-        self.server.stop()
-        self.env["PATH"] = os.environ["PATH"]
-        run = self.run_cli("prepare", "host.tex")
-        self.assertEqual(run.returncode, 0, run.stderr)
-        (self.d / "a.pdf").unlink()
-        (self.d / "host.aux").unlink(missing_ok=True)
-        self.build()
-        self.assertIn("SECOND", text(self.d))
-        self.server = DocstoreServer(self.d / "store", "tok").start()  # for tearDown
-
-    def test_outage_and_bad_credentials_keep_the_lock(self):
-        self.build()
-        self.run_cli("prepare", "host.tex")
-        lock = (self.d / "pdfannex.lock").read_text()
-        shutil.rmtree(self.d / ".pdfannex/objects")
-        self.env["PDFANNEX_DOCSTORE_TOKEN"] = "wrong"
-        run = self.run_cli("prepare", "host.tex")
-        self.assertNotEqual(run.returncode, 0)
-        self.assertIn("authentication-required", run.stderr)
-        self.server.force_status = 503
-        self.env["PDFANNEX_DOCSTORE_TOKEN"] = "tok"
-        run = self.run_cli("update", "host.tex")
-        self.assertIn("temporarily-unavailable", run.stderr)
-        self.assertEqual((self.d / "pdfannex.lock").read_text(), lock)
-
-    def test_unknown_option_and_missing_document(self):
-        for src in ("pdfannex://docstore/memo?x=1", "pdfannex://docstore/none"):
-            (self.d / "host.pdfannex-requests").write_text(src.encode().hex().upper() + "\n")
-            run = self.run_cli("prepare", "host.tex")
-            self.assertNotEqual(run.returncode, 0, src)
 
 
 if __name__ == "__main__":
