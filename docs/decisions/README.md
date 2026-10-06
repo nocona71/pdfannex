@@ -14,3 +14,4 @@ Add a new file whenever a design or process decision is made. Never silently cha
 | 0007 | [List of annexes built from `.aux`](0007-aux-based-list-of-annexes.md) | accepted |
 | 0008 | [Fit-to-sheet scaling may enlarge small pages](0008-fit-to-sheet-may-enlarge.md) | accepted |
 | 0009 | [`pagination=continue` via shipout counter](0009-pagination-continue-shipout-counter.md) | accepted |
+| 0010 | [Workflows trigger on `master`](0010-ci-on-master.md) | accepted |
