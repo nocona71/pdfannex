@@ -29,6 +29,7 @@ RUN apt-get update \
         shellcheck \
         texlive-binaries \
         texlive-extra-utils \
+        texlive-fonts-recommended \
         texlive-latex-base \
         texlive-latex-extra \
         texlive-luatex \

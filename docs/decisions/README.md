@@ -9,3 +9,4 @@ Add a new file whenever a design or process decision is made. Never silently cha
 | 0002 | [Use `pagecommand*` for first-page work](0002-pagecommand-first-page.md) | accepted |
 | 0003 | [Legacy code lives in `legacy/`; `spec/` is the live source](0003-legacy-and-spec-layout.md) | accepted |
 | 0004 | [Dev/CI/release infra from paperlessngx-latex](0004-dev-ci-release-infra.md) | accepted |
+| 0005 | [Devcontainer needs texlive-fonts-recommended](0005-devcontainer-fonts-recommended.md) | accepted |
