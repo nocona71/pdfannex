@@ -8,5 +8,155 @@
 % https://github.com/nocona71/pdfannex/issues.
 \ProvidesPackage{pdfannex}[2026/05/01 v0.1.0 PDF annexes] % # x-release-please-version
 
+\RequirePackage{expl3}
 \RequirePackage{pdfpages}
+\RequirePackage{hyperref}
+\RequirePackage{bookmark}
+
+\ExplSyntaxOn
+
+\newcounter{annex}
+\renewcommand\theannex{\arabic{annex}}
+
+\tl_new:N \l__pdfannex_label_tl
+\tl_new:N \l__pdfannex_pages_tl
+\tl_new:N \l__pdfannex_layout_tl
+\tl_new:N \l__pdfannex_pagestyle_tl
+\tl_new:N \l__pdfannex_title_tl
+\tl_new:N \l__pdfannex_annexname_tl
+\tl_new:N \l__pdfannex_heading_tl
+\tl_new:N \l__pdfannex_pagination_tl
+\bool_new:N \l__pdfannex_bookmark_bool
+\bool_new:N \l__pdfannex_list_bool
+
+\tl_set:Nn \l__pdfannex_annexname_tl { Annex }
+\tl_set:Nn \l__pdfannex_heading_tl { Annexes }
+
+\keys_define:nn { pdfannex }
+  {
+    annex-name .tl_set:N = \l__pdfannex_annexname_tl ,
+    heading    .tl_set:N = \l__pdfannex_heading_tl ,
+    layout     .tl_set:N = \l__pdfannex_layout_tl ,
+    page-style .tl_set:N = \l__pdfannex_pagestyle_tl ,
+    pagination .tl_set:N = \l__pdfannex_pagination_tl ,
+    label      .tl_set:N = \l__pdfannex_label_tl ,
+    pages      .tl_set:N = \l__pdfannex_pages_tl ,
+    bookmark   .bool_set:N = \l__pdfannex_bookmark_bool ,
+    list       .bool_set:N = \l__pdfannex_list_bool ,
+    bookmark   .default:n = true ,
+    list       .default:n = true ,
+  }
+
+\NewDocumentCommand \pdfannexsetup { m }
+  { \keys_set:nn { pdfannex } { #1 } }
+
+\pdfannexsetup { layout = fullpage, page-style = plain, pagination = inherit }
+
+% Per-annex options start from the global defaults.
+\tl_new:N \g__pdfannex_default_layout_tl
+\tl_new:N \g__pdfannex_default_pagestyle_tl
+
+\NewDocumentCommand \includeannex { O{} m m }
+  {
+    \group_begin:
+      \tl_clear:N \l__pdfannex_label_tl
+      \tl_set:Nn \l__pdfannex_pages_tl { - }
+      \bool_set_true:N \l__pdfannex_bookmark_bool
+      \bool_set_true:N \l__pdfannex_list_bool
+      \keys_set:nn { pdfannex } { #1 }
+      \tl_set:Nn \l__pdfannex_title_tl { #3 }
+      \file_if_exist:nF { #2 }
+        { \msg_error:nnn { pdfannex } { file-not-found } { #2 } }
+      \stepcounter { annex }
+      \__pdfannex_include:n { #2 }
+    \group_end:
+  }
+
+\cs_new_protected:Npn \__pdfannex_include:n #1
+  {
+    \includepdf
+      [
+        pages = \l__pdfannex_pages_tl ,
+        pagecommand* = { \__pdfannex_first_page: } ,
+        pagecommand  = { \thispagestyle { \l__pdfannex_pagestyle_tl } } ,
+      ]
+      { #1 }
+  }
+
+% Runs once per annex, on its first inserted page.
+\cs_new_protected:Npn \__pdfannex_first_page:
+  {
+    \thispagestyle { \l__pdfannex_pagestyle_tl }
+    \hypertarget { pdfannex.\theannex } { }
+    \tl_if_empty:NF \l__pdfannex_label_tl
+      {
+        \protected@write \@auxout { }
+          {
+            \string \pdfannex@newlabel
+              { \l__pdfannex_label_tl } { \theannex } { \thepage }
+          }
+      }
+    \bool_if:NT \l__pdfannex_list_bool
+      {
+        \protected@write \@auxout { }
+          {
+            \string \pdfannex@loa
+              { \theannex } { \l__pdfannex_title_tl } { \thepage }
+          }
+      }
+    \bool_if:NT \l__pdfannex_bookmark_bool
+      {
+        \bookmark
+          [ level = 1 , dest = pdfannex.\theannex ]
+          { \l__pdfannex_annexname_tl~\theannex :~\l__pdfannex_title_tl }
+      }
+  }
+
+\cs_new_protected:cpn { pdfannex@newlabel } #1#2#3
+  {
+    \cs_gset:cpn { __pdfannex_ref_#1 } { {#2} {#3} }
+  }
+% Read side: .aux is processed with @ and _ as letters via \@input.
+\cs_new_protected:cpn { pdfannex@loa } #1#2#3
+  {
+    \tl_gput_right:Nn \g__pdfannex_loa_tl
+      { \__pdfannex_loa_line:nnn {#1} {#2} {#3} }
+  }
+\tl_new:N \g__pdfannex_loa_tl
+\cs_new_protected:Npn \__pdfannex_loa_line:nnn #1#2#3
+  {
+    \par\noindent
+    \hyperlink { pdfannex.#1 } { \l__pdfannex_annexname_tl~#1 :~#2 }
+    \dotfill~#3 \par
+  }
+\NewDocumentCommand \listofannexes { }
+  {
+    \section* { \l__pdfannex_heading_tl }
+    \g__pdfannex_loa_tl
+  }
+
+\cs_new:Npn \__pdfannex_ref_num:n #1
+  {
+    \cs_if_exist:cTF { __pdfannex_ref_#1 }
+      { \exp_last_unbraced:Nf \use_i:nn { \use:c { __pdfannex_ref_#1 } } }
+      { ?? }
+  }
+\cs_new:Npn \__pdfannex_ref_page:n #1
+  {
+    \cs_if_exist:cTF { __pdfannex_ref_#1 }
+      { \exp_last_unbraced:Nf \use_ii:nn { \use:c { __pdfannex_ref_#1 } } }
+      { ?? }
+  }
+
+\NewDocumentCommand \annexref { m }
+  {
+    \hyperlink { pdfannex. \__pdfannex_ref_num:n {#1} }
+      { \l__pdfannex_annexname_tl~\__pdfannex_ref_num:n {#1} }
+  }
+\NewDocumentCommand \annexpageref { m } { \__pdfannex_ref_page:n {#1} }
+
+\msg_new:nnn { pdfannex } { file-not-found } { File~'#1'~not~found. }
+
+\ExplSyntaxOff
+
 \endinput
