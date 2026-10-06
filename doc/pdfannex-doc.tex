@@ -65,6 +65,10 @@ supported in this version. Pages in the same PDF are fitted independently.
   the page is scaled uniformly and shifted up. They override the preset
   scale of \texttt{layout}.
 \item[\texttt{page-style}] Page style used on annex pages (default \texttt{plain}).
+\item[\texttt{pagination}] \texttt{inherit} (default) uses the current page
+  counter. \texttt{continue} first ends the current page and continues the page
+  counter from the physical pages already output; use it with classes that reset
+  the page counter, such as \texttt{scrlttr2} with several letters.
 \item[\texttt{bookmark}, \texttt{list}] Boolean; add a bookmark or list entry (default true).
 \item[\texttt{annex-name}, \texttt{heading}] Words used in bookmarks and
   list entries (\texttt{Annex}) and the list heading (\texttt{Annexes}).

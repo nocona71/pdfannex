@@ -52,6 +52,11 @@
     list       .default:n = true ,
   }
 
+% Physical pages shipped so far; lets pagination=continue survive classes
+% (e.g. scrlttr2) that reset the page counter.
+\int_new:N \g__pdfannex_shipped_int
+\AddToHook { shipout / before } { \int_gincr:N \g__pdfannex_shipped_int }
+
 \NewDocumentCommand \pdfannexsetup { m }
   { \keys_set:nn { pdfannex } { #1 } }
 
@@ -71,6 +76,11 @@
       \file_if_exist:nF { #2 }
         { \msg_error:nnn { pdfannex } { file-not-found } { #2 } }
       \stepcounter { annex }
+      \str_if_eq:VnT \l__pdfannex_pagination_tl { continue }
+        {
+          \clearpage
+          \int_set:Nn \c@page { \g__pdfannex_shipped_int + 1 }
+        }
       \bool_gset_true:N \g__pdfannex_first_bool
       \__pdfannex_include:n { #2 }
     \group_end:
