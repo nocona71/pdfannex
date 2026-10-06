@@ -1,0 +1,103 @@
+#!/usr/bin/env texlua
+-- Reference Resolver Protocol 1 resolver for project files (spec/08, decision 0013).
+-- Serves pdfannex://file/<path> for paths inside the working directory, which the
+-- CLI sets to the project root. Hashing and storage belong to the CLI.
+local script_dir = (arg[0] or ""):match("^(.*)/[^/]*$") or "."
+package.path = script_dir .. "/?.lua;" .. package.path
+local lib = require("pdfannex-lib")
+
+local VERSION = "0.1.0"
+
+local function reply(obj)
+  io.stdout:write(lib.json_encode(obj), "\n")
+end
+
+local function request_error(id, code, message)
+  return { id = id, error = { code = code, message = message } }
+end
+
+-- Returns the project-relative path or nil, code, message.
+local function locate(source)
+  local path, query = source:match("^pdfannex://file/([^?]*)%??(.*)$")
+  if not path or path == "" then
+    return nil, "invalid-source", "expected pdfannex://file/<path>"
+  end
+  if query ~= "" then
+    return nil, "unsupported-source-option", "the file resolver takes no options: " .. query
+  end
+  if path:sub(1, 1) == "/" then
+    return nil, "invalid-source", "absolute paths are not allowed"
+  end
+  local cur = ""
+  for part in path:gmatch("[^/]+") do
+    if part == ".." then
+      return nil, "permission-denied", "paths must stay inside the project"
+    end
+    if part ~= "." then
+      cur = cur == "" and part or (cur .. "/" .. part)
+      -- Symlinks could point outside the project; v0.1 refuses them outright.
+      if lfs.symlinkattributes(cur, "mode") == "link" then
+        return nil, "permission-denied", "symbolic links are not allowed: " .. cur
+      end
+    end
+  end
+  if lfs.attributes(cur, "mode") ~= "file" then
+    return nil, "resource-not-found", "no such file: " .. cur
+  end
+  return cur
+end
+
+local function resolve_one(req)
+  local rel, code, message = locate(req.source or "")
+  if not rel then return request_error(req.id, code, message) end
+  return {
+    id = req.id,
+    resolved = req.source,
+    artifact = { path = lfs.currentdir() .. "/" .. rel },
+  }
+end
+
+local function status_one(req)
+  local rel, code, message = locate(req.source or "")
+  if not rel then return request_error(req.id, code, message) end
+  local locked = req.lockedSha256
+  if not locked then return { id = req.id, state = "unknown" } end
+  local data = lib.read_file(rel)
+  if not data then return request_error(req.id, "permission-denied", "cannot read " .. rel) end
+  return { id = req.id, state = lib.sha256_hex(data) == locked and "up-to-date" or "update-available" }
+end
+
+local input = io.stdin:read("a")
+local ok, request = pcall(lib.json_decode, input)
+if not ok or type(request) ~= "table" then
+  io.stderr:write("pdfannex-resolver-file: malformed request\n")
+  reply({ error = { code = "malformed-request", message = "stdin is not a JSON object" } })
+  os.exit(1)
+end
+
+local op = request.operation
+if op == "describe" then
+  reply({
+    resolver = { name = "file", version = VERSION },
+    protocolVersions = { 1 },
+    schemes = { "file" },
+    capabilities = { "resolve", "status" },
+  })
+elseif op == "resolve" or op == "status" then
+  if request.protocolVersion ~= 1 then
+    reply({ error = { code = "unsupported-protocol", message = "only protocol version 1 is supported" } })
+    os.exit(1)
+  end
+  if type(request.requests) ~= "table" then
+    reply({ error = { code = "invalid-request", message = "requests must be an array" } })
+    os.exit(1)
+  end
+  local results = {}
+  for i, req in ipairs(request.requests) do
+    results[i] = (op == "resolve" and resolve_one or status_one)(req)
+  end
+  reply({ protocolVersion = 1, results = results })
+else
+  reply({ error = { code = "invalid-request", message = "unknown operation: " .. tostring(op) } })
+  os.exit(1)
+end

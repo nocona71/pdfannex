@@ -1,0 +1,167 @@
+"""End-to-end tests of the pdfannex CLI and the bundled file resolver."""
+
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tempfile
+import unittest
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "testfiles"))
+from resolver_conformance import conform  # noqa: E402
+
+CLI = ROOT / "cli" / "pdfannex"
+RESOLVER = ROOT / "cli" / "pdfannex-resolver-file"
+NEEDS = shutil.which("texlua") and shutil.which("pdflatex") and shutil.which("pdftotext")
+
+SRC = r"\documentclass{article}\pagestyle{empty}\begin{document}%s\end{document}"
+HOST = r"""\documentclass{article}\usepackage{pdfannex}
+\begin{document}
+\includeannex[page-style=empty]{%s}{Doc}
+\end{document}
+"""
+
+
+def sh(cmd, cwd, check=True, **kw):
+    env = {"PATH": os.environ["PATH"], "HOME": str(cwd), "TEXINPUTS": f"{ROOT / 'tex'}:"}
+    return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, check=check, env=env, **kw)
+
+
+def pdf(cwd, name, text):
+    (Path(cwd) / f"{name}.tex").write_text(SRC % text)
+    sh(["pdflatex", "-interaction=batchmode", f"{name}.tex"], cwd)
+
+
+def latex(cwd, source="a.pdf"):
+    (Path(cwd) / "host.tex").write_text(HOST % source)
+    return sh(["pdflatex", "-interaction=nonstopmode", "-halt-on-error", "host.tex"], cwd, check=False)
+
+
+def cli(cwd, *args, check=True):
+    return sh(["texlua", str(CLI), *args], cwd, check=check)
+
+
+def text(cwd):
+    return sh(["pdftotext", "host.pdf", "-"], cwd).stdout
+
+
+@unittest.skipUnless(NEEDS, "texlua/pdflatex/pdftotext missing")
+class Cli(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.d = Path(self.tmp.name)
+        pdf(self.d, "a", "ALPHA")
+        pdf(self.d, "b", "BETA")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def lock(self):
+        latex(self.d)
+        return cli(self.d, "prepare", "host.tex")
+
+    def test_file_resolver_conforms(self):
+        cwd = os.getcwd()
+        os.chdir(self.d)
+        try:
+            conform(str(RESOLVER), "file", "pdfannex://file/a.pdf", "pdfannex://file/none.pdf")
+        finally:
+            os.chdir(cwd)
+
+    def test_file_resolver_confines_paths(self):
+        (self.d / "sub").mkdir()
+        os.symlink("/etc/hostname", self.d / "link.pdf")
+        for src, code in [("pdfannex://file/../x.pdf", "permission-denied"),
+                          ("pdfannex://file//etc/passwd", "invalid-source"),
+                          ("pdfannex://file/link.pdf", "permission-denied"),
+                          ("pdfannex://file/a.pdf?rev=2", "unsupported-source-option")]:
+            req = {"protocolVersion": 1, "operation": "resolve",
+                   "requests": [{"id": "r", "source": src}]}
+            out = subprocess.run([str(RESOLVER)], input=json.dumps(req), cwd=self.d,
+                                 capture_output=True, text=True).stdout
+            self.assertEqual(json.loads(out)["results"][0]["error"]["code"], code, src)
+
+    def test_lock_store_and_rebuild(self):
+        self.assertIn("1 source(s) locked", self.lock().stdout)
+        lock = json.loads((self.d / "pdfannex.lock").read_text())
+        entry = lock["sources"]["pdfannex://file/a.pdf"]
+        self.assertTrue((self.d / ".pdfannex/objects/sha256" / entry["sha256"][:2]
+                         / f"{entry['sha256']}.pdf").exists())
+        self.assertEqual(entry["resolver"], "file")
+        self.assertEqual(latex(self.d).returncode, 0)
+        self.assertIn("ALPHA", text(self.d))
+        cli(self.d, "verify", "host.tex")
+
+    def test_build_ignores_changed_source_until_update(self):
+        self.lock()
+        shutil.copy(self.d / "b.pdf", self.d / "a.pdf")
+        latex(self.d)
+        self.assertIn("ALPHA", text(self.d))
+        self.assertIn("update-available", cli(self.d, "status", "host.tex").stdout)
+        self.assertEqual(cli(self.d, "prepare", "host.tex").returncode, 0)  # fast path
+        self.assertIn("ALPHA", text(self.d))
+        cli(self.d, "update", "host.tex")
+        latex(self.d)
+        self.assertIn("BETA", text(self.d))
+        self.assertIn("up-to-date", cli(self.d, "status", "host.tex").stdout)
+
+    def test_locked_rebuild_makes_no_resolver_calls(self):
+        self.lock()
+        tool = self.d / "tool"
+        shutil.copytree(ROOT / "cli", tool)
+        (tool / "pdfannex-resolver-file").unlink()
+        run = sh(["texlua", str(tool / "pdfannex"), "prepare", "host.tex"], self.d)
+        self.assertEqual(run.returncode, 0)
+
+    def test_exact_recovery_and_hash_mismatch(self):
+        self.lock()
+        shutil.rmtree(self.d / ".pdfannex/objects")
+        self.assertEqual(cli(self.d, "prepare", "host.tex").returncode, 0)
+        shutil.rmtree(self.d / ".pdfannex/objects")
+        shutil.copy(self.d / "b.pdf", self.d / "a.pdf")
+        run = cli(self.d, "prepare", "host.tex", check=False)
+        self.assertNotEqual(run.returncode, 0)
+        self.assertIn("hash mismatch", run.stderr)
+
+    def test_corrupt_store_fails_verify(self):
+        self.lock()
+        obj = next((self.d / ".pdfannex/objects").rglob("*.pdf"))
+        obj.write_bytes(obj.read_bytes() + b"tamper")
+        run = cli(self.d, "verify", "host.tex", check=False)
+        self.assertNotEqual(run.returncode, 0)
+        self.assertIn("hash does not match", run.stderr)
+
+    def test_failed_batch_keeps_old_lock(self):
+        self.lock()
+        before = (self.d / "pdfannex.lock").read_text()
+        (self.d / "host.pdfannex-requests").write_text("a.pdf\nmissing.pdf\n")
+        run = cli(self.d, "update", "host.tex", check=False)
+        self.assertNotEqual(run.returncode, 0)
+        self.assertIn("resource-not-found", run.stderr)
+        self.assertEqual((self.d / "pdfannex.lock").read_text(), before)
+
+    def test_non_pdf_is_rejected(self):
+        (self.d / "a.pdf").write_text("not a pdf")
+        latex(self.d)
+        run = cli(self.d, "prepare", "host.tex", check=False)
+        self.assertNotEqual(run.returncode, 0)
+        self.assertIn("not a PDF", run.stderr)
+
+    def test_unknown_scheme_needs_a_resolver(self):
+        latex(self.d)
+        (self.d / "host.pdfannex-requests").write_text("pdfannex://nowhere/1\n")
+        run = cli(self.d, "prepare", "host.tex", check=False)
+        self.assertNotEqual(run.returncode, 0)
+        self.assertIn("pdfannex-resolver-nowhere", run.stderr)
+
+    def test_unresolved_uri_source_is_a_latex_error(self):
+        run = latex(self.d, "pdfannex://paperless/1")
+        self.assertNotEqual(run.returncode, 0)
+        self.assertIn("is not resolved", run.stdout)
+
+
+if __name__ == "__main__":
+    unittest.main()

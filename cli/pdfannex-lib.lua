@@ -1,0 +1,228 @@
+-- Shared helpers for the pdfannex CLI and its bundled resolver.
+-- Project-owned wrappers for JSON, hashing, filesystem and process execution
+-- (spec/10): the rest of the code never touches these primitives directly.
+local M = {}
+
+---------------------------------------------------------------- JSON
+local escapes = { ['"'] = '\\"', ['\\'] = '\\\\', ['\b'] = '\\b', ['\f'] = '\\f',
+                  ['\n'] = '\\n', ['\r'] = '\\r', ['\t'] = '\\t' }
+
+local function encode_string(s)
+  return '"' .. s:gsub('[%c"\\]', function(c)
+    return escapes[c] or string.format("\\u%04x", c:byte())
+  end) .. '"'
+end
+
+local function is_array(t)
+  local n = 0
+  for _ in pairs(t) do n = n + 1 end
+  return n == #t
+end
+
+-- Keys are sorted so output is deterministic (lockfile diffs stay small).
+local function encode(v, indent, level)
+  local t = type(v)
+  if t == "string" then return encode_string(v) end
+  if t == "number" or t == "boolean" then return tostring(v) end
+  if t ~= "table" then error("cannot encode " .. t) end
+  local nl, pad, padc, sep = "", "", "", ","
+  if indent then
+    nl = "\n"
+    pad = string.rep(indent, level + 1)
+    padc = string.rep(indent, level)
+  end
+  local parts = {}
+  if next(v) == nil then return "[]" end
+  if is_array(v) then
+    for i, x in ipairs(v) do parts[i] = pad .. encode(x, indent, level + 1) end
+    return "[" .. nl .. table.concat(parts, sep .. nl) .. nl .. padc .. "]"
+  end
+  local keys = {}
+  for k in pairs(v) do keys[#keys + 1] = k end
+  table.sort(keys)
+  local colon = indent and ": " or ":"
+  for i, k in ipairs(keys) do
+    parts[i] = pad .. encode_string(k) .. colon .. encode(v[k], indent, level + 1)
+  end
+  return "{" .. nl .. table.concat(parts, sep .. nl) .. nl .. padc .. "}"
+end
+
+function M.json_encode(v, pretty)
+  return encode(v, pretty and "  " or nil, 0)
+end
+
+function M.json_decode(s)
+  local pos = 1
+  local function fail(msg) error("invalid JSON at byte " .. pos .. ": " .. msg, 0) end
+  local function skip() pos = s:find("[^ \t\r\n]", pos) or #s + 1 end
+  local value
+  local function str()
+    local out = {}
+    pos = pos + 1
+    while true do
+      local c = s:sub(pos, pos)
+      if c == "" then fail("unterminated string") end
+      if c == '"' then pos = pos + 1; return table.concat(out) end
+      if c == "\\" then
+        local e = s:sub(pos + 1, pos + 1)
+        local map = { b = "\b", f = "\f", n = "\n", r = "\r", t = "\t",
+                      ['"'] = '"', ["\\"] = "\\", ["/"] = "/" }
+        if e == "u" then
+          local hex = s:match("^%x%x%x%x", pos + 2) or fail("bad \\u escape")
+          out[#out + 1] = utf8.char(tonumber(hex, 16))
+          pos = pos + 6
+        elseif map[e] then
+          out[#out + 1] = map[e]; pos = pos + 2
+        else fail("bad escape") end
+      else
+        out[#out + 1] = c; pos = pos + 1
+      end
+    end
+  end
+  function value()
+    skip()
+    local c = s:sub(pos, pos)
+    if c == "{" then
+      local obj = {}
+      pos = pos + 1; skip()
+      if s:sub(pos, pos) == "}" then pos = pos + 1; return obj end
+      while true do
+        skip()
+        if s:sub(pos, pos) ~= '"' then fail("object key expected") end
+        local k = str(); skip()
+        if s:sub(pos, pos) ~= ":" then fail("':' expected") end
+        pos = pos + 1
+        obj[k] = value(); skip()
+        local d = s:sub(pos, pos); pos = pos + 1
+        if d == "}" then return obj end
+        if d ~= "," then fail("',' or '}' expected") end
+      end
+    elseif c == "[" then
+      local arr = {}
+      pos = pos + 1; skip()
+      if s:sub(pos, pos) == "]" then pos = pos + 1; return arr end
+      while true do
+        arr[#arr + 1] = value(); skip()
+        local d = s:sub(pos, pos); pos = pos + 1
+        if d == "]" then return arr end
+        if d ~= "," then fail("',' or ']' expected") end
+      end
+    elseif c == '"' then return str()
+    elseif s:find("^true", pos) then pos = pos + 4; return true
+    elseif s:find("^false", pos) then pos = pos + 5; return false
+    elseif s:find("^null", pos) then pos = pos + 4; return nil
+    else
+      local num = s:match("^-?%d+%.?%d*[eE]?[+-]?%d*", pos)
+      if not num or num == "" then fail("unexpected character") end
+      pos = pos + #num
+      return tonumber(num)
+    end
+  end
+  local result = value()
+  skip()
+  if pos <= #s then fail("trailing data") end
+  return result
+end
+
+---------------------------------------------------------------- files
+function M.read_file(path)
+  local f, err = io.open(path, "rb")
+  if not f then return nil, err end
+  local data = f:read("a")
+  f:close()
+  return data
+end
+
+function M.write_file(path, data)
+  local f, err = io.open(path, "wb")
+  if not f then return nil, err end
+  f:write(data)
+  f:flush()
+  f:close()
+  return true
+end
+
+function M.exists(path)
+  return lfs.attributes(path, "mode") ~= nil
+end
+
+function M.mkdirs(path)
+  local cur = path:sub(1, 1) == "/" and "/" or ""
+  for part in path:gmatch("[^/]+") do
+    cur = cur .. part
+    if not M.exists(cur) then
+      local ok, err = lfs.mkdir(cur)
+      if not ok then return nil, err end
+    end
+    cur = cur .. "/"
+  end
+  return true
+end
+
+function M.dirname(path)
+  return path:match("^(.*)/[^/]*$") or "."
+end
+
+-- Write to a temporary sibling and rename, so readers never see a partial file.
+function M.atomic_write(path, data)
+  local tmp = path .. ".tmp"
+  local ok, err = M.write_file(tmp, data)
+  if not ok then return nil, err end
+  return os.rename(tmp, path)
+end
+
+function M.sha256_hex(data)
+  return (sha2.digest256(data):gsub(".", function(c)
+    return string.format("%02x", c:byte())
+  end))
+end
+
+-- Plausible PDF: header near the start, end-of-file marker near the end.
+function M.looks_like_pdf(data)
+  return data:sub(1, 1024):find("%%PDF%-") ~= nil
+     and data:sub(-1024):find("%%%%EOF") ~= nil
+end
+
+---------------------------------------------------------------- sources
+-- Sources are written to TeX-readable generated files, so only characters
+-- that are safe in a TeX argument and a shell word are accepted.
+function M.valid_source(src)
+  return src:find("^[%w%._/:%?=&%+,@%-]+$") ~= nil
+end
+
+-- A plain path in \includeannex means pdfannex://file/<path>.
+function M.normalize_source(src)
+  if src:find("^pdfannex://") then return src end
+  while src:sub(1, 2) == "./" do src = src:sub(3) end
+  return "pdfannex://file/" .. src
+end
+
+function M.source_scheme(src)
+  return src:match("^pdfannex://([%w%-]+)/")
+end
+
+---------------------------------------------------------------- processes
+function M.shell_quote(s)
+  return "'" .. s:gsub("'", "'\\''") .. "'"
+end
+
+-- Run a Resolver Protocol 1 executable: JSON request on stdin, JSON response on
+-- stdout, diagnostics on stderr (left attached to the terminal).
+function M.run_resolver(exe, request)
+  local reqfile, respfile = os.tmpname(), os.tmpname()
+  local ok, err = M.write_file(reqfile, M.json_encode(request))
+  if not ok then return nil, err end
+  local cmd = M.shell_quote(exe) .. " < " .. M.shell_quote(reqfile)
+              .. " > " .. M.shell_quote(respfile)
+  local okexec, _, code = os.execute(cmd)
+  local out = M.read_file(respfile)
+  os.remove(reqfile); os.remove(respfile)
+  if not okexec then
+    return nil, "resolver exited with status " .. tostring(code)
+  end
+  local parsed, perr = pcall(M.json_decode, out or "")
+  if not parsed then return nil, "resolver returned invalid JSON: " .. tostring(perr) end
+  return perr
+end
+
+return M

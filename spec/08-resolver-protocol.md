@@ -324,8 +324,10 @@ Conformance:
 
 `pdfannex://file/PATH` refers to a path relative to the project root.
 
-- Absolute paths, `..` segments and paths that resolve outside the project root (after symlink resolution) MUST yield `invalid-source` or `permission-denied`.
+- Absolute paths yield `invalid-source`; `..` segments yield `permission-denied`.
+- v0.1 refuses symbolic links in any path component (`permission-denied`), instead of resolving them.
 - The resolved identity equals the requested locator, since plain files have no revision.
-- Change detection is the CLI's SHA-256 comparison, not the resolver's.
+- The file resolver takes no source options; any option yields `unsupported-source-option`.
+- Content-addressed resolvers have no upstream revision. A `status` request MAY therefore carry `lockedSha256`, and the file resolver compares it with the current file bytes (`up-to-date` or `update-available`). Without it the state is `unknown`.
 
 ---

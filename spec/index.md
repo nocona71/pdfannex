@@ -9,7 +9,7 @@ Split by topic from the original monolithic v0.1 spec (see git history).
 - [05-localization-policies-and-compat](05-localization-policies-and-compat.md) — 1806 B
 - [06-external-sources-and-resolver-boundary](06-external-sources-and-resolver-boundary.md) — 4449 B
 - [07-mcp-and-resolver-discovery](07-mcp-and-resolver-discovery.md) — 3303 B
-- [08-resolver-protocol](08-resolver-protocol.md) — 6029 B
+- [08-resolver-protocol](08-resolver-protocol.md) — 6321 B
 - [09-identity-lock-and-reproducibility](09-identity-lock-and-reproducibility.md) — 6185 B
 - [10-cli](10-cli.md) — 3076 B
 - [11-security-and-pdf-limitations](11-security-and-pdf-limitations.md) — 3221 B

@@ -9,4 +9,9 @@
   6. A locked artifact whose bytes change is an error, never silently replaced (spec/09). `--update` is explicit.
   7. Third-party resolvers follow spec/08 "Resolver Conventions" (naming, configuration, source options, conformance script).
 - Package side: `pdfannex.sty` works unchanged without CLI or lock; a `pdfannex://` source is looked up in `resolved.tex`, and a missing entry errors with a hint to run `pdfannex lock`.
-- Consequences: the Resolver Protocol is exercised end to end before any network resolver exists. Remaining implementation (CLI skeleton, store, lock, conformance script) is Phase B/C work and is not started.
+- Consequences: the Resolver Protocol is exercised end to end before any network resolver exists. 
+- Implemented (v0.1 slice): `cli/pdfannex` (`prepare`, `update`, `status`, `verify`), `cli/pdfannex-resolver-file`, shared `cli/pdfannex-lib.lua` (JSON, SHA-256 via LuaTeX `sha2`, filesystem, process wrappers), `testfiles/resolver_conformance.py`, `testfiles/test_cli.py`.
+- Request state: `pdfannex.sty` writes `<jobname>.pdfannex-requests` (one normalized source per line) and reads `.pdfannex/resolved.tex`. A locked plain path builds from the stored object; an unlocked plain path is used directly; an unlocked `pdfannex://` URI is a LaTeX error.
+- Symlinks are refused by the file resolver in v0.1 rather than resolved. `status` passes `lockedSha256` to resolvers that can use it (content-addressed sources).
+- Sources may only contain letters, digits and `. _ / : ? = & + , @ -` because they are written into generated TeX files. Other characters are rejected by the CLI.
+- Not done: shipping the CLI in the CTAN archive, `latexmk` helper, `pdfannex.lock` handling of Windows shells (the CLI uses POSIX `sh`).

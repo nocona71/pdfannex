@@ -3,7 +3,7 @@
 LaTeX package for including PDFs as annexes (via `pdfpages`) with bookmarks,
 hyperlinks, an automatic list of annexes and cross references. Works with
 pdfLaTeX, LuaLaTeX and XeLaTeX. An optional CLI and resolver protocol are
-specified but not yet implemented.
+specified; an experimental CLI is included in the repository.
 
 ```latex
 \usepackage{pdfannex}
@@ -18,4 +18,6 @@ Run LaTeX twice to resolve references.
  See `doc/pdfannex-doc.tex` for options.
 
 Status: v0.1 in development. Specification: [spec/index.md](spec/index.md).
+Reproducible inputs (experimental, not yet in the CTAN archive): `texlua cli/pdfannex prepare document.tex` locks every annex PDF by SHA-256 into `.pdfannex/` and `pdfannex.lock`; later builds use the locked copies. `status` reports changed sources, `update` accepts them, `verify` checks the store. See decision 0013.
+
 Development: `make check` (smoke tests), `make e2e` (install the CTAN archive into a clean TEXMFHOME and build with it), `make test` (l3build), `make doc`, `make package`.

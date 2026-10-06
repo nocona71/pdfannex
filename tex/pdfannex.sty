@@ -21,6 +21,11 @@
 \tl_new:N \l__pdfannex_label_tl
 \tl_new:N \l__pdfannex_pages_tl
 \tl_new:N \l__pdfannex_nup_tl
+\tl_new:N \l__pdfannex_file_tl
+\str_new:N \l__pdfannex_key_str
+\bool_new:N \l__pdfannex_found_bool
+\bool_new:N \g__pdfannex_requests_open_bool
+\iow_new:N \g__pdfannex_requests_iow
 \tl_new:N \l__pdfannex_layout_tl
 \tl_new:N \l__pdfannex_pagestyle_tl
 \tl_new:N \l__pdfannex_title_tl
@@ -80,17 +85,79 @@
       \bool_set_true:N \l__pdfannex_list_bool
       \keys_set:nn { pdfannex } { #1 }
       \tl_set:Nn \l__pdfannex_title_tl { #3 }
-      \file_if_exist:nF { #2 }
-        { \msg_error:nnn { pdfannex } { file-not-found } { #2 } }
+      \__pdfannex_resolve:n { #2 }
+      \bool_if:NT \l__pdfannex_found_bool
+        {
+          \file_if_exist:VF \l__pdfannex_file_tl
+            { \msg_error:nnV { pdfannex } { file-not-found } \l__pdfannex_file_tl }
+        }
       \stepcounter { annex }
       \str_if_eq:VnT \l__pdfannex_pagination_tl { continue }
         {
           \clearpage
           \int_set:Nn \c@page { \g__pdfannex_shipped_int + 1 }
         }
-      \bool_gset_true:N \g__pdfannex_first_bool
-      \__pdfannex_include:n { #2 }
+      \bool_if:NT \l__pdfannex_found_bool
+        {
+          \bool_gset_true:N \g__pdfannex_first_bool
+          \exp_args:NV \__pdfannex_include:n \l__pdfannex_file_tl
+        }
     \group_end:
+  }
+
+% Source handling. Plain paths mean pdfannex://file/<path>. The source is
+% recorded for the optional CLI; if the CLI locked it, the stored artifact in
+% the resolution map is used instead of the original path.
+\cs_generate_variant:Nn \file_if_exist:nF { V }
+\cs_generate_variant:Nn \msg_error:nnn { nnV }
+\cs_new_protected:Npn \__pdfannex_strip_dot_slash:
+  {
+    \str_if_eq:eeT { \str_range:Nnn \l__pdfannex_key_str { 1 } { 2 } } { ./ }
+      {
+        \str_set:Nx \l__pdfannex_key_str { \str_range:Nnn \l__pdfannex_key_str { 3 } { -1 } }
+        \__pdfannex_strip_dot_slash:
+      }
+  }
+\cs_new_protected:Npn \__pdfannex_make_key:
+  {
+    \str_set:Nx \l__pdfannex_key_str { \tl_to_str:N \l__pdfannex_file_tl }
+    \str_if_eq:eeF { \str_range:Nnn \l__pdfannex_key_str { 1 } { 11 } } { pdfannex:// }
+      {
+        \__pdfannex_strip_dot_slash:
+        \str_set:Nx \l__pdfannex_key_str { pdfannex://file/ \l__pdfannex_key_str }
+      }
+  }
+\cs_new_protected:Npn \__pdfannex_write_request:
+  {
+    \bool_if:NF \g__pdfannex_requests_open_bool
+      {
+        \iow_open:Nn \g__pdfannex_requests_iow { \c_sys_jobname_str .pdfannex-requests }
+        \bool_gset_true:N \g__pdfannex_requests_open_bool
+      }
+    \iow_now:Nx \g__pdfannex_requests_iow { \l__pdfannex_key_str }
+  }
+\cs_new_protected:Npn \__pdfannex_resolve:n #1
+  {
+    \tl_set:Nx \l__pdfannex_file_tl { #1 }
+    \__pdfannex_make_key:
+    \__pdfannex_write_request:
+    \bool_set_true:N \l__pdfannex_found_bool
+    \cs_if_exist:cTF { __pdfannex_res_ \l__pdfannex_key_str }
+      { \tl_set:Nx \l__pdfannex_file_tl { \use:c { __pdfannex_res_ \l__pdfannex_key_str } } }
+      {
+        \str_if_eq:eeF { \str_range:Nnn \l__pdfannex_key_str { 1 } { 16 } } { pdfannex://file/ }
+          {
+            \bool_set_false:N \l__pdfannex_found_bool
+            \msg_error:nnV { pdfannex } { unresolved-source } \l__pdfannex_key_str
+          }
+      }
+  }
+\NewDocumentCommand \PdfAnnexProvideResolvedArtifact { m m }
+  { \cs_gset:cpx { __pdfannex_res_ \tl_to_str:n {#1} } { \tl_to_str:n {#2} } }
+\AtBeginDocument
+  {
+    \file_if_exist:nT { .pdfannex/resolved.tex }
+      { \file_input:n { .pdfannex/resolved.tex } }
   }
 
 \cs_new_protected:Npn \__pdfannex_include:n #1
@@ -229,6 +296,9 @@
 \NewDocumentCommand \annexpageref { m } { \__pdfannex_ref_page:n {#1} }
 
 \msg_new:nnn { pdfannex } { file-not-found } { File~'#1'~not~found. }
+\msg_new:nnnn { pdfannex } { unresolved-source }
+  { Source~'#1'~is~not~resolved. }
+  { Run~'pdfannex~prepare~\c_sys_jobname_str.tex'~and~then~LaTeX~again. }
 
 \ExplSyntaxOff
 
