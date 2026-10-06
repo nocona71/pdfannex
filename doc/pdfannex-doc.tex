@@ -11,8 +11,51 @@
 
 \section{Overview}
 
-\texttt{pdfannex} will manage PDF annexes with an automatic list of annexes,
-bookmarks and cross references. This is a skeleton; see the repository
-specification.
+\texttt{pdfannex} includes PDF files as annexes using \texttt{pdfpages}. Each
+annex gets a hyperlink target, a PDF bookmark, an entry in an automatic list of
+annexes and a label usable in cross references. It works with pdfLaTeX,
+LuaLaTeX and XeLaTeX and does not depend on the document class.
+
+Annex numbers and pages are stored in the \texttt{.aux} file, so run \LaTeX{}
+twice; references show \texttt{??} on the first run.
+
+\section{Usage}
+
+\begin{verbatim}
+\usepackage{pdfannex}
+...
+\listofannexes
+\includeannex[label=cv,layout=footer-safe]{cv.pdf}{Curriculum vitae}
+See \annexref{cv} on page \annexpageref{cv}.
+\end{verbatim}
+
+
+\verb|\includeannex[|\emph{options}\verb|]{|\emph{file}\verb|}{|\emph{title}\verb|}|
+includes all pages of \emph{file} (or those selected by \texttt{pages}) as one
+annex.
+
+
+\verb|\pdfannexsetup{|\emph{options}\verb|}| sets defaults for later annexes.
+
+
+Prints the list of annexes. \verb|\annexref{|\emph{label}\verb|}| and
+\verb|\annexpageref{|\emph{label}\verb|}| give a link to the annex and its
+first page.
+
+\section{Options}
+
+\begin{description}
+\item[\texttt{label}] Label for \verb|\annexref|.
+\item[\texttt{pages}] Page range passed to \texttt{pdfpages} (default \texttt{-}).
+\item[\texttt{layout}] \texttt{fullpage} (default), \texttt{footer-safe}
+  (scaled down to leave room for the host footer) or \texttt{framed}.
+\item[\texttt{margin}, \texttt{footer-space}] Custom margin and footer area;
+  the page is scaled uniformly and shifted up. They override the preset
+  scale of \texttt{layout}.
+\item[\texttt{page-style}] Page style used on annex pages (default \texttt{plain}).
+\item[\texttt{bookmark}, \texttt{list}] Boolean; add a bookmark or list entry (default true).
+\item[\texttt{annex-name}, \texttt{heading}] Words used in bookmarks and
+  list entries (\texttt{Annex}) and the list heading (\texttt{Annexes}).
+\end{description}
 
 \end{document}
