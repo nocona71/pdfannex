@@ -2,6 +2,7 @@
 -- Project-owned wrappers for JSON, hashing, filesystem and process execution
 -- (spec/10): the rest of the code never touches these primitives directly.
 local M = {}
+local windows = package.config:sub(1, 1) == "\\"
 
 ---------------------------------------------------------------- JSON
 local escapes = { ['"'] = '\\"', ['\\'] = '\\\\', ['\b'] = '\\b', ['\f'] = '\\f',
@@ -125,6 +126,15 @@ function M.json_decode(s)
 end
 
 ---------------------------------------------------------------- files
+function M.normalize_path(path)
+  return path:gsub("\\", "/")
+end
+
+function M.is_absolute(path)
+  path = M.normalize_path(path)
+  return path:sub(1, 1) == "/" or path:match("^%a:") ~= nil
+end
+
 function M.read_file(path)
   local f, err = io.open(path, "rb")
   if not f then return nil, err end
@@ -147,19 +157,27 @@ function M.exists(path)
 end
 
 function M.mkdirs(path)
-  local cur = path:sub(1, 1) == "/" and "/" or ""
-  for part in path:gmatch("[^/]+") do
-    cur = cur .. part
+  path = M.normalize_path(path)
+  local root = path:match("^%a:/") and path:sub(1, 3)
+    or path:sub(1, 1) == "/" and "/"
+    or ""
+  local cur = root
+  for part in path:sub(#root + 1):gmatch("[^/]+") do
+    if cur == "" or cur:sub(-1) == "/" then
+      cur = cur .. part
+    else
+      cur = cur .. "/" .. part
+    end
     if not M.exists(cur) then
       local ok, err = lfs.mkdir(cur)
       if not ok then return nil, err end
     end
-    cur = cur .. "/"
   end
   return true
 end
 
 function M.dirname(path)
+  path = M.normalize_path(path)
   return path:match("^(.*)/[^/]*$") or "."
 end
 
@@ -168,7 +186,13 @@ function M.atomic_write(path, data)
   local tmp = path .. ".tmp"
   local ok, err = M.write_file(tmp, data)
   if not ok then return nil, err end
-  return os.rename(tmp, path)
+  local renamed, rename_err = os.rename(tmp, path)
+  if renamed or not windows or not M.exists(path) then return renamed, rename_err end
+  local output = os.tmpname()
+  local replaced, code = M.run_process({ "move", "/Y", tmp, path }, nil, output)
+  os.remove(output)
+  if replaced then return true end
+  return nil, tostring(rename_err) .. "; replacement failed with status " .. tostring(code)
 end
 
 function M.sha256_hex(data)
@@ -214,19 +238,50 @@ function M.source_scheme(src)
 end
 
 ---------------------------------------------------------------- processes
-function M.shell_quote(s)
+local function quote_arg(s)
+  if windows then return '"' .. s:gsub('"', '\\"') .. '"' end
   return "'" .. s:gsub("'", "'\\''") .. "'"
 end
 
--- Run a Resolver Protocol 1 executable: JSON request on stdin, JSON response on
--- stdout, diagnostics on stderr (left attached to the terminal).
+function M.run_process(command, input, output)
+  local quoted = {}
+  for i, arg in ipairs(command) do
+    quoted[i] = windows and i == 1 and arg:match("^[%w_.%-]+$") and arg or quote_arg(arg)
+  end
+  local cmd = table.concat(quoted, " ")
+  if input then cmd = cmd .. " < " .. quote_arg(input) end
+  if output then cmd = cmd .. " > " .. quote_arg(output) end
+  local ok, why, code = os.execute(cmd)
+  return ok == true or ok == 0, code or why
+end
+
+function M.find_resolver(name)
+  local path_sep = windows and ";" or ":"
+  local path = os.getenv("PATH") or ""
+  for dir in (path .. path_sep):gmatch("(.-)" .. path_sep) do
+    if dir == "" then dir = "." end
+    for _, suffix in ipairs({ "", ".lua" }) do
+      local candidate = dir .. (dir:sub(-1):match("[/\\]") and "" or "/")
+        .. name .. suffix
+      if lfs.attributes(candidate, "mode") == "file" then return candidate end
+    end
+  end
+  if kpse and kpse.find_file then
+    for _, suffix in ipairs({ "", ".lua" }) do
+      local found = kpse.find_file(name .. suffix, "texmfscripts")
+      if found and lfs.attributes(found, "mode") == "file" then return found end
+    end
+  end
+  return nil
+end
+
+-- Run a Resolver Protocol 1 script with JSON on stdin/stdout and diagnostics
+-- left attached to stderr.
 function M.run_resolver(exe, request)
   local reqfile, respfile = os.tmpname(), os.tmpname()
   local ok, err = M.write_file(reqfile, M.json_encode(request))
-  if not ok then return nil, err end
-  local cmd = M.shell_quote(exe) .. " < " .. M.shell_quote(reqfile)
-              .. " > " .. M.shell_quote(respfile)
-  local okexec, _, code = os.execute(cmd)
+  if not ok then os.remove(reqfile); os.remove(respfile); return nil, err end
+  local okexec, code = M.run_process({ "texlua", exe }, reqfile, respfile)
   local out = M.read_file(respfile)
   os.remove(reqfile); os.remove(respfile)
   if not okexec then

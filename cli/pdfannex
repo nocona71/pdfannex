@@ -2,8 +2,11 @@
 -- pdfannex CLI: external-source preparation and reproducibility (spec/09, spec/10).
 -- Owns hashing, the project-local artifact store, pdfannex.lock and the
 -- resolution map. Resolvers (Resolver Protocol 1) only acquire PDFs.
-local script_dir = (arg[0] or ""):match("^(.*)/[^/]*$") or "."
-if script_dir:sub(1, 1) ~= "/" then script_dir = lfs.currentdir() .. "/" .. script_dir end
+local script_path = ((arg[0] or ""):gsub("\\", "/"))
+local script_dir = script_path:match("^(.*)/[^/]*$") or "."
+if script_dir:sub(1, 1) ~= "/" and not script_dir:match("^%a:/") then
+  script_dir = lfs.currentdir() .. "/" .. script_dir
+end
 local support = script_dir
 local file = io.open(support .. "/pdfannex-lib.lua", "r")
 if file then
@@ -11,7 +14,7 @@ if file then
 else
   kpse.set_program_name("latex")
   local found = kpse.find_file("pdfannex-lib.lua", "texmfscripts")
-  if found then support = found:match("^(.*)/[^/]+$") or support end
+  if found then support = found:gsub("\\", "/"):match("^(.*)/[^/]+$") or support end
 end
 package.path = support .. "/?.lua;" .. package.path
 local lib = require("pdfannex-lib")
@@ -106,14 +109,14 @@ local describe_cache = {}
 -- served, so a foreign .tex file cannot import arbitrary files into the store.
 local function locate_file(source)
   local path, query = source:match("^pdfannex://file/([^?]*)%??(.*)$")
-  path = path and lib.pct_decode(path)
+  path = path and lib.normalize_path(lib.pct_decode(path))
   if not path or path == "" then
     return nil, "invalid-source", "expected pdfannex://file/<path>"
   end
   if query ~= "" then
     return nil, "unsupported-source-option", "plain files take no options: " .. query
   end
-  if path:sub(1, 1) == "/" then
+  if lib.is_absolute(path) then
     return nil, "invalid-source", "absolute paths are not allowed"
   end
   local cur = ""
@@ -143,7 +146,7 @@ local function file_call(operation, items)
       byid[req.id] = { id = req.id, error = { code = code, message = message } }
     elseif operation == "resolve" then
       byid[req.id] = { id = req.id, resolved = req.source,
-                       artifact = { path = lfs.currentdir() .. "/" .. rel } }
+                       artifact = { path = lib.normalize_path(lfs.currentdir()) .. "/" .. rel } }
     elseif not req.lockedSha256 then
       byid[req.id] = { id = req.id, state = "unknown" }
     else
@@ -158,7 +161,8 @@ end
 
 local function find_resolver(scheme)
   local name = "pdfannex-resolver-" .. scheme
-  if os.execute("command -v " .. lib.shell_quote(name) .. " >/dev/null 2>&1") then return name end
+  local found = lib.find_resolver(name)
+  if found then return found end
   return nil, "no resolver '" .. name .. "' found on PATH for scheme '" .. scheme .. "'"
 end
 
@@ -401,10 +405,13 @@ if not ({ prepare = 1, update = 1, status = 1, verify = 1 })[cmd] then
   die("unknown command '" .. cmd .. "'")
 end
 
+doc = lib.normalize_path(doc)
 local dir, base = doc:match("^(.*)/([^/]*)$")
 if not dir then dir, base = ".", doc end
 local jobname = base:gsub("%.tex$", "")
-assert(lfs.chdir(dir == "" and "/" or dir))
+local workdir = dir == "" and "/" or dir
+if workdir:match("^%a:$") then workdir = workdir .. "/" end
+assert(lfs.chdir(workdir))
 
 local rc
 if cmd == "prepare" then rc = prepare(jobname, false)

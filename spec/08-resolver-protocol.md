@@ -293,9 +293,10 @@ Human lookup, autocomplete and resource browsing are important future integratio
 
 # Resolver Conventions
 
-Executables and discovery:
+Resolver scripts and discovery:
 
-- A resolver is a standalone executable `pdfannex-resolver-SCHEME` on `PATH` (see `spec/07`).
+- A resolver is a texlua-compatible script named `pdfannex-resolver-SCHEME`, discoverable on `PATH` or in the TeX scripts tree (see `spec/07`).
+- The CLI invokes resolver scripts explicitly with `texlua`; a platform-specific shebang or executable bit is not required.
 - `describe` MUST list the URI schemes it handles, so a mismatch is detected before `resolve`.
 - Resolvers are installed and versioned independently of `pdfannex.sty` and the CLI.
 - The `file` scheme is not a resolver: the CLI handles it itself (see File Handling). The example `adapter-example/pdfannex-resolver-docstore` is the template for new resolvers.
