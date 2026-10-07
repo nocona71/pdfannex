@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.1](https://github.com/nocona71/pdfannex/compare/pdfannex-v0.7.0...pdfannex-v0.7.1) (2026-10-07)
+
+
+### Bug Fixes
+
+* bound apt waits in GitHub Actions ([#44](https://github.com/nocona71/pdfannex/issues/44)) ([c7d9d2f](https://github.com/nocona71/pdfannex/commit/c7d9d2f12eae16f29c91c3c1528098bd27791782))
+* upload versioned CTAN archive artifact ([#42](https://github.com/nocona71/pdfannex/issues/42)) ([d17d8bb](https://github.com/nocona71/pdfannex/commit/d17d8bb91ccf9719733c681927fcd41e9357a3c0))
+
 ## [0.7.0](https://github.com/nocona71/pdfannex/compare/pdfannex-v0.6.2...pdfannex-v0.7.0) (2026-10-07)
 
 
