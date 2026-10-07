@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.3](https://github.com/nocona71/pdfannex/compare/pdfannex-v0.7.2...pdfannex-v0.7.3) (2026-10-07)
+
+
+### Bug Fixes
+
+* install l3build for CTAN submission ([#47](https://github.com/nocona71/pdfannex/issues/47)) ([b6762a1](https://github.com/nocona71/pdfannex/commit/b6762a14a239222e7d4098651ed741e77d54e3b6))
+
 ## [0.7.2](https://github.com/nocona71/pdfannex/compare/pdfannex-v0.7.1...pdfannex-v0.7.2) (2026-10-07)
 
 
