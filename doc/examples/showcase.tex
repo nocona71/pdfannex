@@ -1,0 +1,54 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage{pdfannex}
+
+\pdfannexsetup{
+  annex-name=Annex,
+  heading=Included documents,
+  layout=fullpage,
+  page-style=plain,
+  pagination=inherit
+}
+
+\title{Harbor Street project file}
+\author{Cedar \& Finch Advisory}
+\date{September 2026}
+
+\begin{document}
+\maketitle
+
+\section*{Project record}
+The signed agreement is in \annexref{agreement}, beginning on page
+\annexpageref{agreement}. The receipt is included as
+\annexref{receipt}.
+
+\listofannexes
+
+\includeannex[
+  label=agreement,
+  pages=1-2,
+  layout=footer-safe,
+  pagination=continue
+]{sample-attachments.pdf}{Consulting agreement}
+
+\includeannex[
+  label=receipt,
+  pages=3,
+  layout=framed,
+  page-style=empty,
+  pagination=continue
+]{sample-attachments.pdf}{Expense receipt}
+
+\includeannex[
+  label=notes,
+  pages=4-5,
+  nup=2x1,
+  frame=true,
+  margin=10mm,
+  footer-space=18mm,
+  page-style=empty,
+  bookmark=false,
+  list=false,
+  pagination=continue
+]{sample-attachments.pdf}{Project meeting notes}
+
+\end{document}

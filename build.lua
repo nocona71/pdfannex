@@ -3,6 +3,7 @@ module = "pdfannex"
 sourcefiledir = "tex"
 docfiledir = "doc"
 testfiledir = "testfiles"
+docfiles = { "examples/" }
 
 sourcefiles = { "pdfannex.sty" }
 installfiles = { "pdfannex.sty" }

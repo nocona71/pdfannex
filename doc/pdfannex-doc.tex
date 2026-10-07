@@ -1,11 +1,20 @@
 \documentclass{article}
 \usepackage{lmodern}
 \usepackage[T1]{fontenc}
+\usepackage{graphicx}
 \usepackage{hyperref}
+\usepackage{verbatim}
 
 \title{The \texttt{pdfannex} package}
 \author{\href{https://github.com/nocona71}{nocona71}}
 \date{Version 0.6.1} % # x-release-please-version
+
+\newcommand{\showcasepage}[2]{%
+  \begin{minipage}[t]{.29\textwidth}
+    \centering
+    \fbox{\includegraphics[page=#1,width=.90\linewidth]{examples/showcase.pdf}}\par
+    {\footnotesize #2}
+  \end{minipage}}
 
 \begin{document}
 \maketitle
@@ -20,13 +29,54 @@ LuaLaTeX and XeLaTeX and does not depend on the document class.
 Annex numbers and pages are stored in the \texttt{.aux} file, so run \LaTeX{}
 twice; references show \texttt{??} on the first run.
 
+\section{Why \texttt{pdfannex}?}
+
+An annex is part of the host document, even when its pages come from another
+PDF. Readers need to move through those pages with the same pagination as the
+main document, find each annex in a list and in PDF bookmarks, and follow
+references to it. Without a package, authors can include the pages but must
+maintain the counters, labels, list entries, bookmarks and layout glue
+themselves.
+
+Existing packages already solve parts of this problem:
+\href{https://ctan.org/pkg/pdfpages}{\texttt{pdfpages}} inserts pages from
+external PDFs and provides page selection, n-up placement and hooks for table
+of contents or list entries. Those are useful low-level building blocks, but
+authors still have to coordinate them as a semantic annex workflow.
+\href{https://ctan.org/pkg/appendix}{\texttt{appendix}} adds controls for
+appendix sections and numbering in the host document; it does not insert an
+external PDF as an annex. \href{https://ctan.org/pkg/hyperref}{\texttt{hyperref}}
+and \href{https://ctan.org/pkg/bookmark}{\texttt{bookmark}} provide links and
+PDF outlines, but do not own PDF inclusion or annex pagination.
+
+\texttt{pdfannex} connects these pieces: \texttt{pdfpages} remains responsible
+for physical page inclusion, while the LaTeX package provides annex identity,
+references, a list, bookmarks and consistent per-annex options.
+
+\section{Flexibility and extension}
+
+Use \verb|\pdfannexsetup| for document-wide defaults, then override options on
+individual annexes. Each inclusion can select pages, choose a layout, set a
+frame or custom margins, control page style and pagination, and opt in or out
+of list and bookmark entries. The same local-PDF workflow works without the
+optional CLI or network access.
+
+The package keeps the source question separate from the PDF inclusion
+workflow. An optional CLI and resolver protocol can prepare PDFs from other
+systems, while \texttt{pdfannex.sty} continues to include a local PDF. Resolver
+implementations can evolve independently; they do not add provider-specific
+dependencies to the basic package.
+
 \section{Usage}
 
 \begin{verbatim}
 \usepackage{pdfannex}
 ...
 \listofannexes
-\includeannex[label=cv,layout=footer-safe]{cv.pdf}{Curriculum vitae}
+\includeannex[
+  label=cv,
+  layout=footer-safe
+]{cv.pdf}{Curriculum vitae}
 See \annexref{cv} on page \annexpageref{cv}.
 \end{verbatim}
 
@@ -47,6 +97,75 @@ Core tests cover spaces, Unicode, nested directories, \texttt{\%}, \texttt{\&},
 \texttt{\#}, \texttt{\_}, \texttt{?}, \texttt{=}, and leading hyphens on
 pdfLaTeX, XeLaTeX and LuaLaTeX. Other active characters or non-default
 catcodes are not guaranteed.
+
+\section{Complete example}
+
+The following standalone source demonstrates the supported options together.
+It uses the fictional sample attachment PDF in \path{doc/examples}; the
+source and the resulting PDF are included with this manual.
+
+\begin{quote}
+{\small
+\verbatiminput{examples/showcase.tex}
+}
+\end{quote}
+
+\clearpage
+\section{Rendered result}
+
+The complete five-page output is \path{doc/examples/showcase.pdf}.
+These thumbnails show the main-document references and list, the selected
+agreement pages, a framed receipt, and two-up meeting notes. The notes are
+intentionally omitted from the list and PDF bookmarks.
+
+\begin{center}
+\showcasepage{1}{Main document, references and list}\hfill
+\showcasepage{2}{Selected agreement pages}\hfill
+\showcasepage{4}{Framed receipt}
+
+\vspace{1em}
+
+\showcasepage{3}{Agreement schedule}\hfill
+\showcasepage{5}{Two-up notes}
+\end{center}
+
+\clearpage
+\section{Useful snippets}
+
+\paragraph{Select pages and leave room for a footer}
+\begin{verbatim}
+\includeannex[
+  label=contract,
+  pages=1-3,
+  layout=footer-safe
+]{contract.pdf}{Signed contract}
+\end{verbatim}
+
+\paragraph{Place pages from one PDF two-up}
+\begin{verbatim}
+\includeannex[
+  pages=4-5,
+  nup=2x1,
+  page-style=empty
+]{minutes.pdf}{Meeting minutes}
+\end{verbatim}
+
+\paragraph{Control document-wide defaults and references}
+\begin{verbatim}
+\pdfannexsetup{heading=Included documents, layout=footer-safe}
+\listofannexes
+See \annexref{contract} on page \annexpageref{contract}.
+\end{verbatim}
+
+\paragraph{Regenerate the checked-in example PDFs}
+With \texttt{pdfannex} installed, run these commands from
+\texttt{doc/examples}:
+\begin{verbatim}
+pdflatex sample-attachments.tex
+pdflatex showcase.tex
+pdflatex showcase.tex
+\end{verbatim}
+The second run resolves the references and list entries in the showcase.
 
 \verb|\NewAnnexSource{|\emph{command}\verb|}{|\emph{scheme}\verb|}|
 defines \emph{command} like \verb|\includeannex|, but its first mandatory
