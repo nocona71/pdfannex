@@ -77,6 +77,13 @@ jobs:
             "build/pdfannex-ctan-v${VERSION}.zip" \
             --clobber
 
+      - name: Upload CTAN archive for E2E and reviewed submission
+        uses: actions/upload-artifact@v7
+        with:
+          name: pdfannex-ctan-archive
+          path: build/pdfannex-ctan-v${VERSION}.zip
+          if-no-files-found: error
+
       - name: Upload core TDS archive for installation tests
         uses: actions/upload-artifact@v7
         with:
