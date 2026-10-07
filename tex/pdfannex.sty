@@ -325,7 +325,15 @@
     \hyperlink { pdfannex. \__pdfannex_ref_num:n {#1} }
       { \l__pdfannex_annexname_tl \c_space_tl \__pdfannex_ref_num:n {#1} }
   }
-\NewDocumentCommand \annexpageref { m } { \__pdfannex_ref_page:n {#1} }
+\NewDocumentCommand \annexpageref { m }
+  { \__pdfannex_ref_page:n {#1} }
+
+\pdfstringdefDisableCommands
+  {
+    \def\annexref#1
+      { \l__pdfannex_annexname_tl \c_space_tl \__pdfannex_ref_num:n {#1} }
+    \def\annexpageref#1 { \__pdfannex_ref_page:n {#1} }
+  }
 
 \msg_new:nnn { pdfannex } { file-not-found } { File~'#1'~not~found. }
 \msg_new:nnnn { pdfannex } { unresolved-source }
