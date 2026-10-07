@@ -39,6 +39,36 @@ test -s "$CORE_INSTALLER" && test -s "$DOCSTORE_INSTALLER"
 
 Actions artifacts expire, so choose a run whose artifacts are still available.
 
+## Automated clean-tree first-build test
+
+To test the released core and docstore TDS ZIPs without touching your normal
+TeX tree, use a successful Actions run containing both artifacts and run this
+from the repository checkout:
+
+```bash
+python3 testfiles/release_tds_latexmk_e2e.py RUN_ID
+```
+
+The script downloads both TDS artifacts and their installers with `gh`, then
+creates a temporary `HOME` and `TEXMFHOME`. It confirms pdfannex is not
+visible before installation, installs both archives with their companion
+scripts, and checks that TeX resolves both packages from the temporary tree.
+It also creates a fresh combined showcase project, generates local PDF
+fixtures, and starts an in-process docstore mock serving `memo`.
+
+The test uses a project-local `.latexmkrc` with `build/` as the output
+directory. It runs only the initial `latexmk -lualatex` build—no manual
+`pdfannex init` or `pdfannex prepare`—then checks that the lock and resolution
+map were created, latexmk reran after resolution, the PDF contains both local
+and docstore annexes with converged references, and `pdfannex verify` passes.
+The temporary tree and mock server are removed when the script exits.
+
+Requirements are `gh` authenticated for the repository, Python 3, and a native
+TeX Live installation providing `kpsewhich`, `mktexlsr`, `pdflatex`, LuaLaTeX,
+latexmk, `pdftotext`, `curl`, and `texlua`. This tests TDS installation into a
+clean user tree; it does not install a second TeX Live distribution or use
+`tlmgr`.
+
 ## Install and uninstall
 
 Install both TDS archives without `sudo`:
