@@ -8,6 +8,25 @@ local function powershell_quote(s)
   return "'" .. s:gsub("'", "''") .. "'"
 end
 
+local function powershell_encode(s)
+  local bytes = {}
+  for i = 1, #s do bytes[#bytes + 1] = string.char(s:byte(i), 0) end
+  bytes = table.concat(bytes)
+  local alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+  local encoded = {}
+  for i = 1, #bytes, 3 do
+    local a, b, c = bytes:byte(i, i + 2)
+    local n = a * 65536 + (b or 0) * 256 + (c or 0)
+    local x, y, z, w = math.floor(n / 262144) % 64, math.floor(n / 4096) % 64,
+      math.floor(n / 64) % 64, n % 64
+    encoded[#encoded + 1] = alphabet:sub(x + 1, x + 1)
+    encoded[#encoded + 1] = alphabet:sub(y + 1, y + 1)
+    encoded[#encoded + 1] = b and alphabet:sub(z + 1, z + 1) or "="
+    encoded[#encoded + 1] = c and alphabet:sub(w + 1, w + 1) or "="
+  end
+  return table.concat(encoded)
+end
+
 ---------------------------------------------------------------- JSON
 local escapes = { ['"'] = '\\"', ['\\'] = '\\\\', ['\b'] = '\\b', ['\f'] = '\\f',
                   ['\n'] = '\\n', ['\r'] = '\\r', ['\t'] = '\\t' }
@@ -273,7 +292,8 @@ local function run_windows_process(command, input, output)
     .. ";$p.WaitForExit();if($null -ne $copy){$copy.Wait();$out.Dispose()}"
     .. ";exit $p.ExitCode}catch{[Console]::Error.WriteLine($_);exit 1}"
   local ok, why, code = os.execute(
-    'powershell.exe -NoLogo -NoProfile -NonInteractive -Command "' .. bootstrap .. '"')
+    "powershell.exe -NoLogo -NoProfile -NonInteractive -EncodedCommand "
+      .. powershell_encode(bootstrap))
   return ok == true or ok == 0, code or why
 end
 
