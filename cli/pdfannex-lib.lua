@@ -222,6 +222,8 @@ function M.atomic_write(path, data)
   local renamed, rename_err = os.rename(tmp, path)
   if renamed or not windows or not M.exists(path) then return renamed, rename_err end
   local source, destination = windows_path(tmp), windows_path(path)
+  -- Windows .NET rejects a null backup path here, even when both files exist.
+  -- A unique sibling backup preserves atomic replacement; remove it after success.
   local command = "$source=" .. powershell_quote(source) .. ";$destination="
     .. powershell_quote(destination) .. ";$backup=$destination+'.'+[guid]::NewGuid().ToString()+'.bak';"
     .. "[IO.File]::Replace($source,$destination,$backup);[IO.File]::Delete($backup)"
