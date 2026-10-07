@@ -10,9 +10,9 @@
 \date{Version 0.6.1} % # x-release-please-version
 
 \newcommand{\showcasepage}[2]{%
-  \begin{minipage}[t]{.29\textwidth}
+  \begin{minipage}[t]{.46\textwidth}
     \centering
-    \fbox{\includegraphics[page=#1,width=.90\linewidth]{examples/showcase.pdf}}\par
+    \fbox{\includegraphics[page=#1,width=.94\linewidth]{examples/showcase.pdf}}\par
     {\footnotesize #2}
   \end{minipage}}
 
@@ -120,16 +120,19 @@ intentionally omitted from the list and PDF bookmarks.
 
 \begin{center}
 \showcasepage{1}{Main document, references and list}\hfill
-\showcasepage{2}{Selected agreement pages}\hfill
-\showcasepage{4}{Framed receipt}
+\showcasepage{2}{Selected agreement pages}
 
 \vspace{1em}
 
 \showcasepage{3}{Agreement schedule}\hfill
-\showcasepage{5}{Two-up notes}
+\showcasepage{4}{Framed receipt}
 \end{center}
 
 \clearpage
+\begin{center}
+\showcasepage{5}{Two-up notes}
+\end{center}
+
 \section{Useful snippets}
 
 \paragraph{Select pages and leave room for a footer}
