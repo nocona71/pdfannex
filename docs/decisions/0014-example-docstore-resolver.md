@@ -1,4 +1,5 @@
 # 0014 Example docstore resolver and `\NewAnnexSource`
+- Status: the resolver example, mock service, and adapter tests now live in the standalone [pdfannex resolver example repository](https://github.com/nocona71/pdfannex-docstore); the core still supports `\NewAnnexSource` without provider-specific logic.
 - Context: the goal is simple extensibility and the same command pattern for different PDF sources. A file adapter does not show that: plain paths are already read by the package (self-contained CTAN use), and the CLI already hashes and locks. A numeric-only adapter was too thin to be a template.
 - Decision:
   1. `\NewAnnexSource{\cmd}{scheme}` in `pdfannex.sty` defines `\cmd[opts]{ref}{title}` as `\includeannex[opts]{pdfannex://scheme/ref}{title}`. The scheme is any name; the package never validates or knows adapters. Adapter discovery stays in the CLI (`pdfannex-resolver-SCHEME` on `PATH`).

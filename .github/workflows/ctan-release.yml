@@ -67,9 +67,6 @@ jobs:
           make package
           cp build/pdfannex-ctan.zip \
             "build/pdfannex-ctan-v${VERSION}.zip"
-          make adapter-package
-          cp adapter-example/pdfannex-docstore-ctan.zip \
-            "build/pdfannex-docstore-ctan-v${VERSION}.zip"
 
       - name: Attach archive to GitHub Release
         env:
@@ -78,7 +75,6 @@ jobs:
         run: |
           gh release upload "$RELEASE_TAG" \
             "build/pdfannex-ctan-v${VERSION}.zip" \
-            "build/pdfannex-docstore-ctan-v${VERSION}.zip" \
             --clobber
 
       - name: Upload core TDS archive for installation tests
@@ -88,13 +84,4 @@ jobs:
           path: |
             build/distrib/tds/pdfannex.tds.zip
             build/distrib/tds/install-texmfhome-tds.sh
-          if-no-files-found: error
-
-      - name: Upload adapter TDS archive for installation tests
-        uses: actions/upload-artifact@v7
-        with:
-          name: docstore-adapter-tds-archive
-          path: |
-            adapter-example/build/distrib/tds/pdfannex-docstore.tds.zip
-            adapter-example/build/distrib/tds/install-texmfhome-tds.sh
           if-no-files-found: error
