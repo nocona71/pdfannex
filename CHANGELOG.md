@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/nocona71/pdfannex/compare/pdfannex-v0.5.1...pdfannex-v0.6.0) (2026-10-07)
+
+
+### Features
+
+* extract docstore adapter to nocona71/pdfannex-docstore ([#28](https://github.com/nocona71/pdfannex/issues/28)) ([f0942a0](https://github.com/nocona71/pdfannex/commit/f0942a007ad8e639a6cc95f407bfe3b2afe2b28a))
+
 ## [0.5.1](https://github.com/nocona71/pdfannex/compare/pdfannex-v0.5.0...pdfannex-v0.5.1) (2026-10-07)
 
 
