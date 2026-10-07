@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.0](https://github.com/nocona71/pdfannex/compare/pdfannex-v0.2.0...pdfannex-v0.3.0) (2026-10-07)
+
+
+### Features
+
+* \NewAnnexSource and example docstore resolver ([5daad84](https://github.com/nocona71/pdfannex/commit/5daad8443f306289d2d5a31dca0561c352cba4b3))
+* **cli:** add pdfannex CLI with lock, store and file resolver ([af72ea9](https://github.com/nocona71/pdfannex/commit/af72ea91a5dead8ac8054b13ae78fb6e6d7adffe))
+* **cli:** hex-encoded source exchange for any file name; locked-mode test suite ([63f4b57](https://github.com/nocona71/pdfannex/commit/63f4b57da64e490d95d53dba87110c544305cbc1))
+* **cli:** make request recording opt-in via pdfannex init ([5249e73](https://github.com/nocona71/pdfannex/commit/5249e739601f7c6233e84eab2492d2c4def85dab))
+* HTTP docstore adapter example with mock server ([573a277](https://github.com/nocona71/pdfannex/commit/573a27798ebb21bc30146e844c7c36da0fe90b21))
+* package docstore adapter for CTAN ([fee8c0e](https://github.com/nocona71/pdfannex/commit/fee8c0e2a76150f9fc555e08e39e11156ded1192))
+* prepare docstore adapter for standalone packaging ([2e16fd2](https://github.com/nocona71/pdfannex/commit/2e16fd2ec516030272de1addfe371cabe52b6215))
+* ship CLI in CTAN package ([e796ba7](https://github.com/nocona71/pdfannex/commit/e796ba76da33b585921c694f9b46dedddf03312a))
+
 ## [0.2.0](https://github.com/nocona71/pdfannex/compare/pdfannex-v0.1.0...pdfannex-v0.2.0) (2026-10-06)
 
 
