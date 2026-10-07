@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/nocona71/pdfannex/compare/pdfannex-v0.3.0...pdfannex-v0.3.1) (2026-10-07)
+
+
+### Bug Fixes
+
+* safely invoke Windows PowerShell bootstrap ([5905a4b](https://github.com/nocona71/pdfannex/commit/5905a4b0c612a7388712a8bb3a1e14a7248e37ca))
+
 ## [0.3.0](https://github.com/nocona71/pdfannex/compare/pdfannex-v0.2.0...pdfannex-v0.3.0) (2026-10-07)
 
 
