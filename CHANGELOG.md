@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.2](https://github.com/nocona71/pdfannex/compare/pdfannex-v0.6.1...pdfannex-v0.6.2) (2026-10-07)
+
+
+### Bug Fixes
+
+* include showcase assets in archive E2E ([#35](https://github.com/nocona71/pdfannex/issues/35)) ([c4e39ee](https://github.com/nocona71/pdfannex/commit/c4e39eea2a51dcf8181df2ecd38a43d944474e9d))
+
 ## [0.6.1](https://github.com/nocona71/pdfannex/compare/pdfannex-v0.6.0...pdfannex-v0.6.1) (2026-10-07)
 
 
