@@ -212,7 +212,9 @@ jobs:
             -o Acquire::https::Timeout=10
           )
           sudo apt-get "${apt_options[@]}" update
-          sudo apt-get "${apt_options[@]}" install -y --no-install-recommends curl texlive-extra-utils
+          sudo apt-get "${apt_options[@]}" install -y --no-install-recommends \
+            curl texlive-extra-utils texlive-latex-extra
+          command -v l3build
 
       - name: Download the reviewed archive and announcement
         uses: actions/download-artifact@v8
