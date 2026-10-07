@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/nocona71/pdfannex/compare/pdfannex-v0.3.1...pdfannex-v0.4.0) (2026-10-07)
+
+
+### Features
+
+* update CLI to report package version dynamically and enhance documentation ([266aeee](https://github.com/nocona71/pdfannex/commit/266aeeecb85669927a21767bbab58f2005283791))
+
 ## [0.3.1](https://github.com/nocona71/pdfannex/compare/pdfannex-v0.3.0...pdfannex-v0.3.1) (2026-10-07)
 
 
