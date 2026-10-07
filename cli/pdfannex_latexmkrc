@@ -1,0 +1,49 @@
+our $pre_tex_code;
+$pre_tex_code .= ' ' if length $pre_tex_code;
+$pre_tex_code .= '\def\PdfAnnexLatexmkIntegration{1}';
+for my $command (\$pdflatex, \$lualatex, \$xelatex) {
+    $$command =~ s/(?<!%)%S/%P/g;
+}
+
+sub pdfannex_latexmk_run {
+    my (@args) = @_;
+    my $status = system('pdfannex', @args);
+    die "pdfannex latexmk integration: cannot run pdfannex: $!\n"
+        if $status == -1;
+    if ($status != 0) {
+        my $reason = $status & 127
+            ? "signal " . ($status & 127)
+            : "status " . ($status >> 8);
+        die "pdfannex latexmk integration: pdfannex @args failed ($reason)\n";
+    }
+}
+
+sub pdfannex_latexmk_read {
+    my ($path) = @_;
+    return undef unless -e $path;
+    open my $file, '<', $path
+        or die "pdfannex latexmk integration: cannot read $path: $!\n";
+    local $/;
+    return <$file>;
+}
+
+push @{$hooks{before_xlatex}}, sub {
+    pdfannex_latexmk_run('init') unless -f 'pdfannex.lock';
+};
+
+push @{$hooks{after_xlatex_analysis}}, sub {
+    my %info = @_;
+    my $jobname = $info{root_name};
+    die "pdfannex latexmk integration: latexmk did not provide the job name\n"
+        unless defined $jobname && length $jobname;
+    $jobname =~ s/\.tex\z//;
+    return unless -f "$jobname.pdfannex-requests";
+
+    my $before = pdfannex_latexmk_read('.pdfannex/resolved.tex');
+    pdfannex_latexmk_run('prepare', "$jobname.tex");
+    my $after = pdfannex_latexmk_read('.pdfannex/resolved.tex');
+    die "pdfannex latexmk integration: pdfannex prepare did not create the resolution map\n"
+        unless defined $after;
+    $$Pout_of_date = 'pdfannex resolution map changed'
+        if !defined $before || $before ne $after;
+};

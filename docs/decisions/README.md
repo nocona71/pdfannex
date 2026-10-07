@@ -31,3 +31,6 @@ Add a new file whenever a design or process decision is made. Never silently cha
 | 0024 | [Use native Windows paths for atomic replacement](0024-native-windows-paths-for-file-replacement.md) | accepted |
 | 0025 | [Use a temporary backup for Windows file replacement](0025-backup-for-windows-file-replacement.md) | accepted |
 | 0026 | [Report the package version from the CLI](0026-cli-uses-package-version.md) | accepted |
+| 0027 | [Document manual native TeX Live installation check](0027-manual-native-texlive-sanity-check.md) | accepted |
+| 0028 | [Opt-in `latexmk` source bootstrap](0028-opt-in-latexmk-bootstrap.md) | accepted |
+| 0029 | [Install TDS artifacts in a native user tree](0029-texmfhome-tds-installer.md) | accepted |

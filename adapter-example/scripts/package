@@ -26,3 +26,5 @@ cp "$stage/pdfannex-docstore-ctan.zip" "$root/"
 mkdir -p "$root/build/distrib/tds"
 cp "$stage/build/distrib/tds/pdfannex-docstore.tds.zip" \
   "$root/build/distrib/tds/"
+cp -p "$root/../scripts/install-texmfhome-tds.sh" \
+  "$root/build/distrib/tds/"

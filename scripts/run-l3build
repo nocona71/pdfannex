@@ -33,4 +33,6 @@ else
   cp -f "$project/pdfannex-ctan.zip" "$root/build/pdfannex-ctan.zip"
   cp -f "$project/build/distrib/tds/pdfannex.tds.zip" \
     "$root/build/distrib/tds/pdfannex.tds.zip"
+  cp -p "$root/scripts/install-texmfhome-tds.sh" \
+    "$root/build/distrib/tds/install-texmfhome-tds.sh"
 fi

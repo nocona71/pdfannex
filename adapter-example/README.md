@@ -84,10 +84,12 @@ Try it: `python3 docstore_server.py ROOT --token SECRET` serves
    \includeannex{pdfannex://docstore/contract-42?rev=2}{Contract, rev. 2}
    ```
 
-3. Build once (without `-halt-on-error`), then `pdfannex init` and
-   `pdfannex prepare document.tex`. `pdfannex status document.tex` reports
-   `update-available` when a newer revision appears; `pdfannex update
-   document.tex` accepts it.
+3. For the explicit workflow, run `pdfannex init`, build once, and run
+   `pdfannex prepare document.tex`. Alternatively, enable the optional
+   [latexmk integration](https://github.com/nocona71/pdfannex/blob/main/docs/latexmk-integration.md)
+   to prepare sources automatically during `latexmk document.tex`.
+   `pdfannex status document.tex` reports `update-available` when a newer
+   revision appears; `pdfannex update document.tex` accepts it.
 
 The package needs no knowledge of the adapter: any scheme name works with
 `\NewAnnexSource`. Adapters are arbitrary code, so the CLI runs them from

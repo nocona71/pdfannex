@@ -72,6 +72,7 @@ class Packaging(unittest.TestCase):
                       "pdfannex/pdfannex-doc.tex", "pdfannex/pdfannex-doc.pdf",
                       "pdfannex/scripts/pdfannex/pdfannex",
                       "pdfannex/scripts/pdfannex/pdfannex-lib.lua",
+                      "pdfannex/scripts/pdfannex/pdfannex_latexmkrc",
                       "pdfannex/pdfannex.1"):
                 self.assertIn(n, names)
             tds = set(zipfile.ZipFile(
@@ -79,6 +80,7 @@ class Packaging(unittest.TestCase):
             self.assertIn("tex/latex/pdfannex/pdfannex.sty", tds)
             self.assertIn("scripts/pdfannex/pdfannex", tds)
             self.assertIn("scripts/pdfannex/pdfannex-lib.lua", tds)
+            self.assertIn("scripts/pdfannex/pdfannex_latexmkrc", tds)
             self.assertIn("doc/man/man1/pdfannex.1", tds)
             self.assertIn("doc/latex/pdfannex/pdfannex-doc.pdf", tds)
 
