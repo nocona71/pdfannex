@@ -37,3 +37,4 @@ Add a new file whenever a design or process decision is made. Never silently cha
 | 0030 | [Support `latexmk` output directories](0030-latexmk-output-directories.md) | accepted |
 | 0031 | [Smoke-test release TDS artifacts with first-build `latexmk`](0031-release-tds-latexmk-smoke-test.md) | adapter half moved to pdfannex-docstore; partly superseded by 0032 |
 | 0032 | [Keep core packaging and QA in the core repository](0032-core-repository-owns-core-package-only.md) | accepted |
+| 0033 | [Use plain-text annex references in PDF bookmarks](0033-plain-text-references-in-bookmarks.md) | accepted |

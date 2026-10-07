@@ -1,0 +1,36 @@
+\documentclass{article}
+\usepackage{pdfannex}
+\input{regression-test}
+\newcommand{\annexreferences}[1]
+  {\annexref{#1} (page \annexpageref{#1})}
+\begin{document}
+\includeannex[label=first,page-style=empty]{a1.pdf}{First}
+{\includeannex[label=second,page-style=empty]{a3.pdf}{Second}}
+\includeannex[label=third,page-style=empty]{a1.pdf}{Third}
+\START
+\tableofcontents
+\listoffigures
+\listofannexes
+\section{Reference to \annexreferences{first}}
+See \annexreferences{first}.\footnote{Footnote reference: \annexreferences{second}.}
+\begin{figure}[!ht]
+  \centering
+  \rule{1cm}{1cm}
+  \caption{Caption reference: \annexreferences{second}.}
+\end{figure}
+{\annexreferences{first} again: \annexreferences{first}.}
+Repeated references: \annexreferences{first}; \annexreferences{second}.
+\ExplSyntaxOn
+\tl_set:Nx \l_tmpa_tl
+  {
+    annexes=\arabic{annex}~
+    first=\__pdfannex_ref_num:n{first}/\__pdfannex_ref_page:n{first}~
+    second=\__pdfannex_ref_num:n{second}/\__pdfannex_ref_page:n{second}~
+    third=\__pdfannex_ref_num:n{third}/\__pdfannex_ref_page:n{third}~
+    loa=\tl_to_str:N \g__pdfannex_loa_tl
+  }
+\typeout{\l_tmpa_tl}
+\pdfstringdef\l_tmpb_tl{\annexreferences{first}}
+\typeout{bookmark=\l_tmpb_tl}
+\ExplSyntaxOff
+\end{document}
