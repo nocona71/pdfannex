@@ -45,3 +45,4 @@ Add a new file whenever a design or process decision is made. Never silently cha
 | 0038 | [Review manual CTAN submissions before upload](0038-review-manual-ctan-submissions.md) | accepted |
 | 0039 | [Close issue #1 for per-file n-up](0039-close-issue-1-per-file-nup.md) | accepted |
 | 0040 | [Bound APT waits in GitHub Actions](0040-bound-apt-waits-in-github-actions.md) | accepted |
+| 0041 | [Prefer HTTPS Ubuntu archive on hosted runners](0041-prefer-https-ubuntu-archive.md) | accepted |
