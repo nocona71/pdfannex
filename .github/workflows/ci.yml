@@ -62,8 +62,25 @@ jobs:
           path: adapter-example/pdfannex-docstore-ctan.zip
           if-no-files-found: error
 
+      - name: Upload core TDS archive
+        uses: actions/upload-artifact@v7
+        with:
+          name: pdfannex-tds-archive
+          path: build/distrib/tds/pdfannex.tds.zip
+          if-no-files-found: error
+
+      - name: Upload docstore adapter TDS archive
+        uses: actions/upload-artifact@v7
+        with:
+          name: docstore-adapter-tds-archive
+          path: adapter-example/build/distrib/tds/pdfannex-docstore.tds.zip
+          if-no-files-found: error
+
   ctan-e2e:
     needs: check
     uses: ./.github/workflows/ctan-e2e.yml
     with:
       artifact: ctan-archive
+      adapter_artifact: docstore-adapter-ctan-archive
+      core_tds_artifact: pdfannex-tds-archive
+      adapter_tds_artifact: docstore-adapter-tds-archive

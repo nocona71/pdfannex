@@ -38,9 +38,10 @@ CORE_BUILD_INPUTS = (
 CAN_PACKAGE = shutil.which("l3build")
 CAN_INSTALL_TEST = (
     CAN_PACKAGE
-    and CORE_CLI.is_file()
-    and CORE_TEX.is_file()
-    and all(shutil.which(tool) for tool in ("texlua", "pdflatex", "pdftotext", "curl"))
+    and all(
+        shutil.which(tool)
+        for tool in ("texlua", "pdflatex", "pdftotext", "curl", "kpsewhich")
+    )
 )
 
 SOURCE_PDF = r"\documentclass{article}\pagestyle{empty}\begin{document}%s\end{document}"
@@ -135,8 +136,13 @@ class AdapterPackage(unittest.TestCase):
             ).external_attr >> 16
             self.assertTrue(mode & 0o111, "resolver script is not marked executable")
 
-    @unittest.skipUnless(CAN_INSTALL_TEST, "TeX/curl tools or pdfannex checkout missing")
+    @unittest.skipUnless(CAN_INSTALL_TEST, "TeX/curl tools missing")
     def test_installed_adapter_works_with_cli_and_locked_rebuild(self):
+        for adapter_format in ("tds", "ctan"):
+            with self.subTest(adapter_format=adapter_format):
+                self.exercise_installed_adapter(adapter_format)
+
+    def exercise_installed_adapter(self, adapter_format):
         with tempfile.TemporaryDirectory() as tmp:
             work = Path(tmp)
             texmf = work / "texmf"
@@ -146,10 +152,21 @@ class AdapterPackage(unittest.TestCase):
             adapter_scripts = scripts / "pdfannex-docstore"
             for directory in (bindir, cli_scripts):
                 directory.mkdir(parents=True, exist_ok=True)
+            adapter_scripts.mkdir(parents=True, exist_ok=True)
             with zipfile.ZipFile(self.tds_archive) as archive:
                 archive.extractall(texmf)
             with zipfile.ZipFile(self.core_tds_archive) as archive:
                 archive.extractall(texmf)
+
+            if adapter_format == "ctan":
+                with zipfile.ZipFile(self.archive) as archive:
+                    archive.extractall(work / "ctan")
+                package = work / "ctan/pdfannex-docstore"
+                tex_dir = texmf / "tex/latex/pdfannex-docstore"
+                tex_dir.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(package / "pdfannex-docstore.sty", tex_dir)
+                for name in ("pdfannex-resolver-docstore", "adapter-lib.lua"):
+                    shutil.copy2(package / name, adapter_scripts)
 
             for script in (cli_scripts / "pdfannex", adapter_scripts / "pdfannex-resolver-docstore"):
                 script.chmod(script.stat().st_mode | 0o111)
@@ -167,6 +184,10 @@ class AdapterPackage(unittest.TestCase):
                 PDFANNEX_DOCSTORE_TOKEN="test-token",
             )
             env.pop("TEXINPUTS", None)
+            self.assertEqual(
+                run(["kpsewhich", "pdfannex.sty"], work, env).stdout.strip(),
+                str(texmf / "tex/latex/pdfannex/pdfannex.sty"),
+            )
             self.assertEqual(
                 run(["kpsewhich", "pdfannex-docstore.sty"], work, env).stdout.strip(),
                 str(texmf / "tex/latex/pdfannex-docstore/pdfannex-docstore.sty"),

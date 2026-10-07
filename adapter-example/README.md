@@ -14,7 +14,8 @@ the mock server and tests.
 | `conformance.py` | Generic protocol conformance check for any resolver |
 | `test_docstore.py` | Module tests of the adapter alone (`make test`) |
 | `test_integration.py` | Plain files and docstore documents in one document, with the real pdfannex package and CLI (`PDFANNEX_HOME`, default `..`; skipped if absent) |
-| `test_package.py` | CTAN/TDS archive checks and an installed-package locked-build test (`make test`) |
+| `test_package.py` | CTAN/TDS archive checks and isolated TDS/CTAN install locked-build tests (`make test-fast`) |
+| `e2e_ctan.py` | End-to-end install test for the built core and adapter CTAN archives |
 | `build.lua`, `ctan/` | Standalone `l3build` configuration and user-facing package docs |
 | `pdfannex-docstore.sty` | Optional companion package; requires pdfannex dated 2026/05/01 or later |
 | `.github/actions/test/action.yml` | Composite test action invoked by the monorepo CI and reusable after extracting this directory |
@@ -25,6 +26,13 @@ checkout used by integration tests. In this repository, root CI invokes it with
 the workspace path. After separating this directory, the workflow template
 checks out `nocona71/pdfannex` beside the adapter and passes that checkout path.
 The caller must install the test tools listed in the workflow template.
+
+Run the focused installed-package test with `make test-fast`; it builds core
+and adapter packages in temporary trees and verifies isolated TDS and CTAN
+installations, resolver selection and a locked rebuild. CI additionally has a
+fresh-container TeX Live package-manager test: it installs only the adapter
+from a local repository, confirms `tlmgr` installs the declared core dependency,
+then tests both local and docstore PDFs through a locked rebuild.
 
 Build the separate CTAN/TDS package with `make package`. The CTAN archive is
 `pdfannex-docstore-ctan.zip`; the TDS archive is

@@ -1,8 +1,11 @@
-.PHONY: test package clean
+.PHONY: test test-fast package clean
 test:
 	bash -n scripts/package
 	python3 test_docstore.py
 	python3 test_integration.py
+	python3 test_package.py
+
+test-fast:
 	python3 test_package.py
 
 package:

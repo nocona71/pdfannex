@@ -1,4 +1,4 @@
-.PHONY: check test smoke e2e doc package adapter-package install clean
+.PHONY: check test test-fast smoke e2e doc package adapter-package install clean
 
 check:
 	./scripts/check
@@ -6,11 +6,17 @@ check:
 test:
 	l3build check
 
+test-fast:
+	$(MAKE) -C adapter-example test-fast
+
 smoke:
 	./scripts/smoke-tex
 
-e2e: package
+e2e: package adapter-package
 	./scripts/e2e-ctan build/pdfannex-ctan.zip
+	python3 adapter-example/e2e_ctan.py \
+		build/pdfannex-ctan.zip \
+		adapter-example/pdfannex-docstore-ctan.zip
 
 doc:
 	./scripts/run-l3build doc

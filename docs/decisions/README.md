@@ -23,3 +23,6 @@ Add a new file whenever a design or process decision is made. Never silently cha
 | 0016 | [Package adapters for CTAN distribution](0016-package-adapters-for-ctan.md) | accepted |
 | 0017 | [Keep adapter CI separable](0017-adapter-ci-composite-action.md) | accepted |
 | 0018 | [Track only intentional project files](0018-track-only-intentional-files.md) | accepted |
+| 0019 | [Fast isolated package tests and CTAN end-to-end coverage](0019-package-test-levels.md) | superseded by 0020 |
+| 0020 | [TeX Live package-manager end-to-end tests](0020-texlive-package-manager-e2e.md) | accepted |
+| 0021 | [Use the host Docker daemon from the devcontainer](0021-devcontainer-docker-access.md) | accepted |

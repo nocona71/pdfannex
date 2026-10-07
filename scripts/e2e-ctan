@@ -101,6 +101,34 @@ for engine in pdf xelatex lualatex; do
     && fail "$flag: second latexmk run rebuilt a converged document"
 done
 
+step "exercise the installed CLI with a locked plain-file rebuild"
+mkdir "$work/cli"
+cd "$work/cli"
+cat >annex-source.tex <<'T'
+\documentclass{article}
+\pagestyle{empty}
+\begin{document}
+LOCKEDANNEX
+\end{document}
+T
+pdflatex -interaction=batchmode annex-source.tex >/dev/null
+mv annex-source.pdf annex.pdf
+cat >document.tex <<'T'
+\documentclass{article}
+\usepackage{pdfannex}
+\begin{document}
+\includeannex[page-style=empty]{annex.pdf}{Contract}
+\end{document}
+T
+pdfannex init >/dev/null
+pdflatex -interaction=nonstopmode -halt-on-error document.tex >/dev/null
+pdfannex prepare document.tex
+rm annex.pdf document.aux document.pdf
+pdflatex -interaction=nonstopmode -halt-on-error document.tex >/dev/null
+pdfannex verify document.tex
+pdftotext document.pdf - | grep -qF "LOCKEDANNEX" \
+  || fail "locked rebuild output does not contain the annex content"
+
 step "build the shipped manual from source"
 mkdir "$work/manual" && cp "$pkg/pdfannex-doc.tex" "$work/manual/"
 (cd "$work/manual" && latexmk -pdf -interaction=nonstopmode -halt-on-error pdfannex-doc.tex >/dev/null) \

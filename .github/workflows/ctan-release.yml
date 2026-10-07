@@ -80,3 +80,17 @@ jobs:
             "build/pdfannex-ctan-v${VERSION}.zip" \
             "build/pdfannex-docstore-ctan-v${VERSION}.zip" \
             --clobber
+
+      - name: Upload core TDS archive for installation tests
+        uses: actions/upload-artifact@v7
+        with:
+          name: pdfannex-tds-archive
+          path: build/distrib/tds/pdfannex.tds.zip
+          if-no-files-found: error
+
+      - name: Upload adapter TDS archive for installation tests
+        uses: actions/upload-artifact@v7
+        with:
+          name: docstore-adapter-tds-archive
+          path: adapter-example/build/distrib/tds/pdfannex-docstore.tds.zip
+          if-no-files-found: error
