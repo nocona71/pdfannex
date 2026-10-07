@@ -30,3 +30,4 @@ Add a new file whenever a design or process decision is made. Never silently cha
 | 0023 | [Quote Windows child-process arguments](0023-windows-child-process-arguments.md) | accepted |
 | 0024 | [Use native Windows paths for atomic replacement](0024-native-windows-paths-for-file-replacement.md) | accepted |
 | 0025 | [Use a temporary backup for Windows file replacement](0025-backup-for-windows-file-replacement.md) | accepted |
+| 0026 | [Report the package version from the CLI](0026-cli-uses-package-version.md) | accepted |

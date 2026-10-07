@@ -17,7 +17,8 @@ Run LaTeX twice to resolve references.
 **Warning:** annex pages are scaled to fit the host sheet (aspect ratio and orientation preserved). Source pages smaller than the sheet, such as A5 in an A4 document, are enlarged; larger pages are shrunk.
  See `doc/pdfannex-doc.tex` for options.
 
-Status: v0.1 in development. Specification: [spec/index.md](spec/index.md).
+The v0.1 specification remains the baseline contract: [spec/index.md](spec/index.md).
+See [GitHub releases](https://github.com/nocona71/pdfannex/releases) for the current version.
 
 For reproducible inputs, run `pdfannex init` once (it creates
 `pdfannex.lock`, which opts in to recording source requests), build once, then

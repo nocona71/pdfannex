@@ -32,6 +32,20 @@ class Packaging(unittest.TestCase):
         manifest = (ROOT / ".release-please-manifest.json").read_text()
         self.assertIn(f'"{v}"', manifest)
 
+    @unittest.skipUnless(shutil.which("texlua"), "texlua not available")
+    def test_cli_reports_package_version(self):
+        style = (ROOT / "tex/pdfannex.sty").read_text(encoding="utf-8")
+        match = re.search(
+            r"\\ProvidesPackage\{pdfannex\}\[\d{4}/\d{2}/\d{2} v"
+            + VERSION_RE + r" ", style)
+        self.assertIsNotNone(match)
+        assert match is not None
+        result = subprocess.run(
+            ["texlua", str(ROOT / "cli/pdfannex"), "--version"],
+            cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), f"pdfannex {match.group(1)}")
+
     def test_release_workflow_tag_prefix(self):
         text = (ROOT / ".github/workflows/ctan-release.yml").read_text()
         self.assertNotIn("paperless", text)

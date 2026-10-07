@@ -19,7 +19,6 @@ end
 package.path = support .. "/?.lua;" .. package.path
 local lib = require("pdfannex-lib")
 
-local VERSION = "0.1.0"
 local LOCK = "pdfannex.lock"
 local STORE = ".pdfannex/objects/sha256"
 local MAP = ".pdfannex/resolved.tex"
@@ -27,6 +26,38 @@ local MAP = ".pdfannex/resolved.tex"
 local function die(msg)
   io.stderr:write("pdfannex: ", msg, "\n")
   os.exit(1)
+end
+
+local function version_from_style(path)
+  local file, err = io.open(path, "r")
+  if not file then die("cannot read package version from " .. path .. ": " .. tostring(err)) end
+  for line in file:lines() do
+    if line:find("\\ProvidesPackage{pdfannex}", 1, true) then
+      local version = line:match("v(%d+%.%d+%.%d+)")
+      file:close()
+      if not version then die("cannot parse package version from " .. path) end
+      return version
+    end
+  end
+  file:close()
+  die("missing package version declaration in " .. path)
+end
+
+local function package_version()
+  for _, path in ipairs({
+    script_dir .. "/../tex/pdfannex.sty",
+    script_dir .. "/../../pdfannex.sty",
+  }) do
+    local file = io.open(path, "r")
+    if file then
+      file:close()
+      return version_from_style(path)
+    end
+  end
+  kpse.set_program_name("latex")
+  local path = kpse.find_file("pdfannex.sty", "tex")
+  if not path then die("cannot locate pdfannex.sty to determine version") end
+  return version_from_style(path)
 end
 
 local USAGE = [[
@@ -392,7 +423,7 @@ end
 
 ---------------------------------------------------------------- main
 local cmd, doc = arg[1], arg[2]
-if cmd == "--version" then print("pdfannex " .. VERSION); os.exit(0) end
+if cmd == "--version" then print("pdfannex " .. package_version()); os.exit(0) end
 if not cmd or cmd == "--help" or cmd == "-h" then print(USAGE); os.exit(cmd and 0 or 1) end
 if cmd == "init" then
   if lib.read_file(LOCK) then print("pdfannex: " .. LOCK .. " already exists"); os.exit(0) end

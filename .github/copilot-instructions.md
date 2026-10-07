@@ -1,8 +1,9 @@
 # Copilot instructions — pdfannex
 
 ## Project
-`pdfannex` is a LaTeX package (`pdfannex.sty`) for including PDFs as annexes, plus an optional CLI and
-resolver protocol for external sources. The LaTeX package is implemented (v0.1 in development); the CLI and resolver protocol are still spec-only.
+`pdfannex` is a LaTeX package (`pdfannex.sty`) for including PDFs as annexes, plus a TeXLua CLI and
+resolver protocol for reproducible external sources. The package and CLI are implemented; the v0.1
+specification remains the baseline contract.
 
 ## Source of truth
 - The v0.1 spec is split by topic in `spec/` (start at `spec/index.md`). Edit the files in `spec/`.

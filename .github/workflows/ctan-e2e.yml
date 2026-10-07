@@ -33,7 +33,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: Release tag whose archive to test (for example pdfannex-v0.1.0)
+        description: Release tag whose archive to test (for example pdfannex-v1.0.0)
         required: true
         type: string
 

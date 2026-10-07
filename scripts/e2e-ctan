@@ -45,13 +45,12 @@ ln -s "$TEXMFHOME/scripts/pdfannex/pdfannex" "$work/bin/pdfannex"
 export PATH="$work/bin:$PATH"
 [[ "$(kpsewhich pdfannex.sty)" == "$TEXMFHOME/tex/latex/pdfannex/pdfannex.sty" ]] \
   || fail "kpsewhich does not find the installed package"
-[[ "$(pdfannex --version)" == "pdfannex 0.1.0" ]] \
-  || fail "installed CLI cannot find its TeXLua support library"
-[[ "$(texlua "$work/bin/pdfannex" --version)" == "pdfannex 0.1.0" ]] \
-  || fail "CLI does not work when called through texlua"
-
 version="$(sed -n 's/.*\\ProvidesPackage{pdfannex}\[[^ ]* v\([0-9.]*\) .*/\1/p' "$pkg/pdfannex.sty")"
 [[ -n "$version" ]] || fail "cannot read package version"
+[[ "$(pdfannex --version)" == "pdfannex $version" ]] \
+  || fail "installed CLI cannot find its TeXLua support library"
+[[ "$(texlua "$work/bin/pdfannex" --version)" == "pdfannex $version" ]] \
+  || fail "CLI does not work when called through texlua"
 echo "installed pdfannex $version"
 grep -q "Version $version" "$pkg/pdfannex-doc.tex" || fail "manual version differs from package"
 
