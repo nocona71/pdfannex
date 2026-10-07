@@ -1,0 +1,112 @@
+name: Build and submit CTAN release
+
+on:
+  release:
+    types: [published]
+  workflow_call:
+    inputs:
+      release_tag:
+        description: Published release tag to submit
+        required: true
+        type: string
+    secrets:
+      CTAN_EMAIL:
+        description: Email address for the CTAN uploader
+        required: false
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Published release tag to submit
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  ctan-archive:
+    permissions:
+      contents: write
+    uses: ./.github/workflows/ctan-release.yml
+    with:
+      release_tag: ${{ inputs.release_tag || github.event.release.tag_name }}
+
+  ctan-e2e:
+    needs: ctan-archive
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ctan-e2e.yml
+    with:
+      release_tag: ${{ inputs.release_tag || github.event.release.tag_name }}
+      tds_artifact: pdfannex-tds-archive
+
+  submit:
+    needs: [ctan-archive, ctan-e2e]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout release source
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.release_tag || github.event.release.tag_name }}
+
+      - name: Install l3build and curl
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends curl texlive-extra-utils
+
+      - name: Validate release tag, package version, and uploader email
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag || github.event.release.tag_name }}
+          CTAN_EMAIL: ${{ secrets.CTAN_EMAIL }}
+        run: |
+          case "$RELEASE_TAG" in
+            pdfannex-v*) version="${RELEASE_TAG#pdfannex-v}" ;;
+            *)
+              echo "Unexpected release tag: $RELEASE_TAG" >&2
+              exit 1
+              ;;
+          esac
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Release tag does not contain a semantic version: $RELEASE_TAG" >&2
+            exit 1
+          fi
+          package_version="$(sed -E 's/[[:space:]]+# x-release-please-version$//' VERSION)"
+          if [[ "$package_version" != "$version" ]]; then
+            echo "VERSION does not match release tag $RELEASE_TAG" >&2
+            exit 1
+          fi
+          if [[ -z "$CTAN_EMAIL" ]]; then
+            echo "::error::Configure the CTAN_EMAIL Actions secret before submitting a release."
+            exit 1
+          fi
+          echo "VERSION=$version" >>"$GITHUB_ENV"
+
+      - name: Download the validated archive and release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag || github.event.release.tag_name }}
+        run: |
+          mkdir -p build
+          gh release download "$RELEASE_TAG" \
+            --pattern "pdfannex-ctan-v${VERSION}.zip" \
+            --dir build
+          cp "build/pdfannex-ctan-v${VERSION}.zip" pdfannex-ctan.zip
+          gh release view "$RELEASE_TAG" --json body --jq '.body // empty' \
+            >build/ctan-announcement.txt
+          if [[ ! -s build/ctan-announcement.txt ]]; then
+            echo "GitHub Release $RELEASE_TAG has no announcement text." >&2
+            exit 1
+          fi
+
+      - name: Submit package to CTAN
+        env:
+          CTAN_EMAIL: ${{ secrets.CTAN_EMAIL }}
+          PDFANNEX_CTAN_UPLOAD: "true"
+        run: |
+          l3build upload \
+            --email "$CTAN_EMAIL" \
+            --file build/ctan-announcement.txt \
+            "$VERSION"

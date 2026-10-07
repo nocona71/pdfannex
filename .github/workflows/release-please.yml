@@ -25,21 +25,12 @@ jobs:
           config-file: .release-please-config.json
           manifest-file: .release-please-manifest.json
 
-  ctan-archive:
+  ctan-release:
     needs: release-please
     if: needs.release-please.outputs.release_created == 'true'
     permissions:
       contents: write
-    uses: ./.github/workflows/ctan-release.yml
+    uses: ./.github/workflows/ctan-submit.yml
     with:
       release_tag: ${{ needs.release-please.outputs.tag_name }}
-
-  ctan-e2e:
-    needs: [release-please, ctan-archive]
-    if: needs.release-please.outputs.release_created == 'true'
-    permissions:
-      contents: read
-    uses: ./.github/workflows/ctan-e2e.yml
-    with:
-      release_tag: ${{ needs.release-please.outputs.tag_name }}
-      tds_artifact: pdfannex-tds-archive
+    secrets: inherit
