@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.2](https://github.com/nocona71/pdfannex/compare/pdfannex-v0.7.1...pdfannex-v0.7.2) (2026-10-07)
+
+
+### Bug Fixes
+
+* bypass stalled Azure Ubuntu mirror ([#45](https://github.com/nocona71/pdfannex/issues/45)) ([f3007f4](https://github.com/nocona71/pdfannex/commit/f3007f45bb1b6ba7e9875df9b7ba6be6ef138cc9))
+
 ## [0.7.1](https://github.com/nocona71/pdfannex/compare/pdfannex-v0.7.0...pdfannex-v0.7.1) (2026-10-07)
 
 
