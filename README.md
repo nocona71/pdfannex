@@ -28,10 +28,12 @@ run `pdfannex prepare document.tex`. The CLI locks annex PDFs by SHA-256 into
 `verify` checks the local store. Plain files are handled by the CLI itself
 (decision 0015). Other sources use texlua-compatible resolver scripts named
 `pdfannex-resolver-SCHEME`; the CLI invokes them with `texlua`, so no
-platform-specific shebang or executable bit is required. `adapter-example/`
-is a fork-start, and `\NewAnnexSource` gives a source its own command
-(decision 0014). The docstore example is a separate adapter and requires curl
-when contacting its service.
+platform-specific shebang or executable bit is required.
+[`pdfannex-docstore`](https://github.com/nocona71/pdfannex-docstore) is a
+reference resolver adapter maintained as its own repository and a fork-start
+template for new resolvers; `\NewAnnexSource` gives a source its own command
+(decision 0014). The docstore adapter is a separate repository and requires
+curl when contacting its service.
 Build once without `-halt-on-error` before `prepare` if the document has an
 unresolved `pdfannex://` source, because that error can stop the build before
 later sources are recorded.
@@ -47,7 +49,7 @@ normally makes commands available on `PATH`; otherwise invoke the installed
 script with `texlua` or add its scripts directory to `PATH`. Resolver scripts
 are discovered on `PATH` or in the TeX scripts tree.
 
-Development: `make test-fast` (isolated core/adapter package-install and locked-build test), `make check` (full smoke/integration tests), `make e2e` (install both CTAN archives into a clean TEXMFHOME and test locked builds), `make test` (l3build), `make doc`, `make package` (core CTAN archive), `make adapter-package` (docstore adapter archive). CI also runs two separate clean-container TeX Live package-manager tests: one installs the core TDS package and tests local-PDF inclusion; the other installs the adapter through `tlmgr`, verifies automatic installation of its core dependency, and tests local and docstore PDFs.
+Development: `make check` (full smoke/integration tests), `make e2e` (install the CTAN archive into a clean TEXMFHOME and test a locked build), `make test` (l3build), `make doc`, `make package` (core CTAN archive). CI also runs a clean-container TeX Live package-manager test that installs the core TDS package and tests local-PDF inclusion. The [`pdfannex-docstore`](https://github.com/nocona71/pdfannex-docstore) adapter repository runs its own equivalent CI against this repository as a sibling checkout.
 
 For a persistent install of the core package artifact into a host TeX Live user's tree, see the [manual native TeX Live sanity check](./docs/manual-native-texlive-sanity-check.md).
 

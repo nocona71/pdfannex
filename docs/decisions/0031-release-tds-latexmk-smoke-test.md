@@ -1,5 +1,6 @@
 # 0031 Smoke-test release TDS artifacts with first-build `latexmk`
 
+- Status: the adapter half of this script (docstore installation, combined showcase, mock server) moved to [`nocona71/pdfannex-docstore`](https://github.com/nocona71/pdfannex-docstore)'s `release_tds_latexmk_e2e.py` when the adapter was extracted (issue #8), adjusted to pull the core and adapter TDS artifacts from their own repositories' releases instead of a single combined Actions run. This repository no longer ships a combined variant; the rest of this decision is the historical record of the original combined design.
 - Context: package tests built from the checkout do not exercise the exact TDS ZIPs and installer scripts uploaded by a release workflow. Native user-tree installs can also conflict with packages already in a developer's TeX tree.
 - Decision: provide an opt-in E2E script that downloads both release TDS artifacts, installs them into a temporary `TEXMFHOME`, starts an isolated docstore mock, and builds the combined showcase with one initial `latexmk` command.
 - Consequences: maintainers can verify release artifacts without modifying their regular TeX tree or invoking `tlmgr`; the test requires a valid Actions run ID and native TeX tools, and Actions artifact retention applies.

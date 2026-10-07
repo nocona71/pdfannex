@@ -299,7 +299,7 @@ Resolver scripts and discovery:
 - The CLI invokes resolver scripts explicitly with `texlua`; a platform-specific shebang or executable bit is not required.
 - `describe` MUST list the URI schemes it handles, so a mismatch is detected before `resolve`.
 - Resolvers are installed and versioned independently of `pdfannex.sty` and the CLI.
-- The `file` scheme is not a resolver: the CLI handles it itself (see File Handling). The example `adapter-example/pdfannex-resolver-docstore` is the template for new resolvers.
+- The `file` scheme is not a resolver: the CLI handles it itself (see File Handling). [`pdfannex-docstore`](https://github.com/nocona71/pdfannex-docstore)'s `pdfannex-resolver-docstore` is the reference template for new resolvers.
 
 Source options:
 

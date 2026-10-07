@@ -1,5 +1,6 @@
 # 0017 Keep adapter CI separable
 
+- Status: the adapter was extracted to [`nocona71/pdfannex-docstore`](https://github.com/nocona71/pdfannex-docstore) (issue #8). Its composite action and workflow template moved with it per consequence 4 below and are now the standalone repository's own CI, which checks out this repository as a sibling for integration tests. The rest of this decision still holds as the historical record of how the separation was designed.
 - Context: `adapter-example/` is currently a subdirectory of the pdfannex repository but is intended to become a standalone package/repository. GitHub only activates workflows from the repository-root `.github/workflows`; nested workflow files are ignored.
 - Decision:
   1. Keep the adapter test action and future workflow template inside `adapter-example/.github/`.

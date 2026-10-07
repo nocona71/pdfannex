@@ -42,5 +42,4 @@ jobs:
     uses: ./.github/workflows/ctan-e2e.yml
     with:
       release_tag: ${{ needs.release-please.outputs.tag_name }}
-      core_tds_artifact: pdfannex-tds-archive
-      adapter_tds_artifact: docstore-adapter-tds-archive
+      tds_artifact: pdfannex-tds-archive
