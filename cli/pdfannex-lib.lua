@@ -221,8 +221,12 @@ function M.atomic_write(path, data)
   if not ok then return nil, err end
   local renamed, rename_err = os.rename(tmp, path)
   if renamed or not windows or not M.exists(path) then return renamed, rename_err end
-  local command = "[IO.File]::Replace(" .. powershell_quote(windows_path(tmp)) .. ","
-    .. powershell_quote(windows_path(path)) .. ",$null)"
+  local source, destination = windows_path(tmp), windows_path(path)
+  local command = "$source=" .. powershell_quote(source) .. ";$destination="
+    .. powershell_quote(destination) .. ";try{[IO.File]::Replace($source,$destination,$null)}"
+    .. "catch{[Console]::Error.WriteLine(('source=' + $source + ' exists='"
+    .. " + [IO.File]::Exists($source) + '; destination=' + $destination + ' exists='"
+    .. " + [IO.File]::Exists($destination)));throw}"
   local replaced, code = M.run_process({
     "powershell.exe", "-NoProfile", "-NonInteractive", "-Command", command,
   })
