@@ -61,7 +61,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: ${{ inputs.tds_artifact }}
-          path: tds/core
+          path: tds
 
       - name: Build TDS archive when not supplied
         if: inputs.tds_artifact == ''
@@ -71,8 +71,8 @@ jobs:
             make texlive-extra-utils texlive-fonts-recommended texlive-latex-base \
             texlive-latex-extra texlive-luatex texlive-xetex
           make package
-          mkdir -p tds/core
-          cp build/distrib/tds/pdfannex.tds.zip tds/core/
+          mkdir -p tds
+          cp build/distrib/tds/pdfannex.tds.zip tds/
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -91,5 +91,5 @@ jobs:
           docker run --rm -v "$PWD:/w:ro" pdfannex-e2e:clean bash -euxo pipefail -c '
             /w/scripts/e2e-ctan /w/archive/core/pdfannex-ctan*.zip
             python3 /w/testfiles/texlive_e2e.py \
-              core /w/tds/core/pdfannex.tds.zip
+              /w/tds/pdfannex.tds.zip
           '

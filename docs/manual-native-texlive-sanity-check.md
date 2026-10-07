@@ -12,7 +12,7 @@ If you previously extracted a TDS ZIP manually, remove or back up those old
 package files first, or test in a clean separate user tree; the installer
 cannot safely claim files that it did not install.
 
-To exercise the docstore adapter's own TDS artifact the same way, see
+To exercise the docstore adapter's own TDS artifact, see
 [`pdfannex-docstore`'s manual sanity check](https://github.com/nocona71/pdfannex-docstore/blob/main/docs/manual-native-texlive-sanity-check.md),
 which covers the combined core+adapter installation and smoke test.
 
@@ -31,11 +31,30 @@ gh run download "$RUN_ID" \
   --dir "$ARTIFACT_DIR"
 CORE_TDS="$ARTIFACT_DIR/pdfannex.tds.zip"
 CORE_INSTALLER="$ARTIFACT_DIR/install-texmfhome-tds.sh"
-test -s "$CORE_TDS"
-test -s "$CORE_INSTALLER"
+test -s "$CORE_TDS" && test -s "$CORE_INSTALLER"
 ```
 
 Actions artifacts expire, so choose a run whose artifacts are still available.
+
+## Automated clean-tree first-build test
+
+To test the TDS ZIP without changing your normal TeX tree, run this from a
+pdfannex checkout with `gh` authenticated:
+
+```bash
+python3 testfiles/release_tds_latexmk_e2e.py RUN_ID
+```
+
+The script downloads the core TDS archive and installer, installs them into a
+temporary `TEXMFHOME`, and runs an initial `latexmk` build without manually
+invoking `pdfannex init` or `pdfannex prepare`. It checks that the lock and
+resolution map are created, the PDF and references are correct, and a
+subsequent locked rebuild succeeds after the original PDF is removed.
+
+Requirements are Python 3, `gh`, and native TeX Live tools including
+`kpsewhich`, `mktexlsr`, `pdflatex`, LuaLaTeX, `latexmk`, `pdftotext`, and
+`texlua`. This tests a clean user-tree installation; it does not install a
+second TeX Live distribution or use `tlmgr`.
 
 ## Install and uninstall
 
@@ -49,7 +68,7 @@ kpsewhich -format=texmfscripts pdfannex_latexmkrc
 
 The script defaults to the `TEXMFHOME` reported by `kpsewhich`. To use a
 different user tree, pass it as the third argument to `install`. To remove the
-package later, use the matching script and archive name:
+package later:
 
 ```bash
 bash "$CORE_INSTALLER" uninstall "$CORE_TDS"

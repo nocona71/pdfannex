@@ -1,4 +1,4 @@
-"""Exercise pdfannex TDS packages through TeX Live's package manager."""
+"""Exercise the pdfannex TDS package through TeX Live's package manager."""
 
 import argparse
 import io
@@ -10,8 +10,9 @@ import tarfile
 import tempfile
 import zipfile
 
-
-PDF_SOURCE = r"\documentclass{article}\pagestyle{empty}\begin{document}%s\end{document}"
+PDF_SOURCE = (
+    r"\documentclass{article}\pagestyle{empty}\begin{document}%s\end{document}"
+)
 LATEXMKRC = r"""my $pdfannex_rc = `kpsewhich -format=texmfscripts pdfannex_latexmkrc`;
 $pdfannex_rc =~ s/\r?\n\z//;
 die "pdfannex latexmk integration not found\n"
@@ -44,30 +45,24 @@ def tds_files(archive):
     return files
 
 
-def package_manifest(
-    name, files, dependency=None, root_prefix="", size=None, relocated=True
-):
+def package_manifest(name, files, size=None):
     runfiles, docfiles = [], []
     run_size = doc_size = 0
     for path, (content, _) in sorted(files.items()):
-        package_path = f"{root_prefix}{path}"
         blocks = (len(content) + 511) // 512
         if path.startswith("doc/"):
-            docfiles.append((package_path, blocks))
+            docfiles.append((path, blocks))
             doc_size += blocks
         else:
-            runfiles.append((package_path, blocks))
+            runfiles.append((path, blocks))
             run_size += blocks
 
     lines = [
         f"name {name}",
         "category Package",
         "revision 1",
+        "relocated 1",
     ]
-    if relocated:
-        lines.append("relocated 1")
-    if dependency:
-        lines.append(f"depend {dependency}")
     if size is not None:
         lines.append(f"containersize {size}")
     if runfiles:
@@ -151,11 +146,27 @@ def test_core(tds_archive):
         if not tlmgr:
             raise RuntimeError("tlmgr is required for TeX Live package tests")
         if run(["kpsewhich", "pdfannex.sty"], work, env, check=False).stdout.strip():
-            raise RuntimeError("pdfannex is visible before the core package installation")
+            raise RuntimeError("pdfannex is visible before the package installation")
+
         archive = package_container("pdfannex", files, work / "containers")
-        run([tlmgr, "--usermode", "--usertree", str(usertree), "init-usertree"], work, env)
-        run([tlmgr, "--usermode", "--usertree", str(usertree),
-             "install", "--file", str(archive)], work, env)
+        run(
+            [tlmgr, "--usermode", "--usertree", str(usertree), "init-usertree"],
+            work,
+            env,
+        )
+        run(
+            [
+                tlmgr,
+                "--usermode",
+                "--usertree",
+                str(usertree),
+                "install",
+                "--file",
+                str(archive),
+            ],
+            work,
+            env,
+        )
 
         style = run(["kpsewhich", "pdfannex.sty"], work, env).stdout.strip()
         if style != str(usertree / "tex/latex/pdfannex/pdfannex.sty"):
@@ -222,13 +233,10 @@ See \annexref{core}.
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("core",))
-    parser.add_argument("archives", nargs="+", type=Path)
+    parser.add_argument("tds_archive", type=Path)
     args = parser.parse_args()
-    if len(args.archives) != 1:
-        parser.error("core requires exactly one TDS archive")
-    test_core(args.archives[0])
-    print(f"OK: TeX Live {args.mode} package installation passed")
+    test_core(args.tds_archive)
+    print("OK: TeX Live core package installation passed")
 
 
 if __name__ == "__main__":

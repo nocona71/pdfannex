@@ -1,4 +1,5 @@
 # 0013 The file resolver is the first Resolver Protocol 1 adapter
+- Status: the docstore example and generic resolver conformance utility were moved to the standalone [pdfannex resolver example repository](https://github.com/nocona71/pdfannex-docstore); the protocol contract remains in spec/08.
 - Status: the standalone `pdfannex-resolver-file` was removed by decision 0015; the CLI handles `pdfannex://file/` itself. The rest still holds.
 - Context: builds must be reproducible even if a source PDF changes or is tampered with (spec/09). Local files need the same protection as external systems.
 - Decision:

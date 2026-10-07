@@ -33,7 +33,7 @@ platform-specific shebang or executable bit is required.
 reference resolver adapter maintained as its own repository and a fork-start
 template for new resolvers; `\NewAnnexSource` gives a source its own command
 (decision 0014). The docstore adapter is a separate repository and requires
-curl when contacting its service.
+curl when contacting its mock HTTP document service.
 Build once without `-halt-on-error` before `prepare` if the document has an
 unresolved `pdfannex://` source, because that error can stop the build before
 later sources are recorded.
@@ -49,7 +49,7 @@ normally makes commands available on `PATH`; otherwise invoke the installed
 script with `texlua` or add its scripts directory to `PATH`. Resolver scripts
 are discovered on `PATH` or in the TeX scripts tree.
 
-Development: `make check` (full smoke/integration tests), `make e2e` (install the CTAN archive into a clean TEXMFHOME and test a locked build), `make test` (l3build), `make doc`, `make package` (core CTAN archive). CI also runs a clean-container TeX Live package-manager test that installs the core TDS package and tests local-PDF inclusion. The [`pdfannex-docstore`](https://github.com/nocona71/pdfannex-docstore) adapter repository runs its own equivalent CI against this repository as a sibling checkout.
+Development: `make test-fast` runs the focused core packaging and TDS-installer tests; `make check` runs the core smoke and integration tests; `make e2e` installs the core CTAN archive into a clean TEXMFHOME and tests a locked build; `make test` runs l3build; `make doc` builds the manual; and `make package` creates the core CTAN archive. CI also runs a clean-container TeX Live package-manager test that installs the core TDS package and tests local-PDF inclusion. The resolver example has its own tests and package workflow in the [separate repository](https://github.com/nocona71/pdfannex-docstore), which tests against this repository as a sibling checkout.
 
 For a persistent install of the core package artifact into a host TeX Live user's tree, see the [manual native TeX Live sanity check](./docs/manual-native-texlive-sanity-check.md).
 
