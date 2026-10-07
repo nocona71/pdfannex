@@ -167,21 +167,24 @@ pdflatex showcase.tex
 \end{verbatim}
 The second run resolves the references and list entries in the showcase.
 
-\verb|\NewAnnexSource{|\emph{command}\verb|}{|\emph{scheme}\verb|}|
-defines \emph{command} like \verb|\includeannex|, but its first mandatory
-argument is a reference served by an external resolver:
-\verb|\NewAnnexSource{\includedoc}{docstore}| makes
-\verb|\includedoc{42}{Title}| equal to
-\verb|\includeannex{pdfannex://docstore/42}{Title}|. The package accepts any
-scheme name; the optional command-line tool finds the resolver program.
+The \verb|\NewAnnexSource| command defines an \verb|\includeannex|-like
+command for a resolver scheme. Its first argument names the command and its
+second argument selects the scheme. For example:
+\begin{verbatim}
+\NewAnnexSource{\includedoc}{docstore}
+\includedoc{42}{Title}
+\end{verbatim}
+The optional command-line tool finds the resolver program; the package accepts
+any scheme name.
 
 
 \verb|\pdfannexsetup{|\emph{options}\verb|}| sets defaults for later annexes.
 
-Prints the list of annexes. \verb|\annexref{|\emph{label}\verb|}| and
-\verb|\annexpageref{|\emph{label}\verb|}| give a link to the annex and its
-first page. References can also be used in footnotes, headings and captions;
-PDF bookmarks contain plain-text references.
+\verb|\listofannexes| prints the list of annexes.
+\verb|\annexref{label}| links to an annex.
+\verb|\annexpageref{label}| links to its first page.
+References can also be used in footnotes, headings and captions; PDF bookmarks
+contain plain-text references.
 
 \section{Reproducible inputs}
 
@@ -209,6 +212,7 @@ run before later requests are recorded.
 An optional project-local \texttt{latexmk} integration automates this
 bootstrap. Add the following to \texttt{.latexmkrc}:
 
+{\small
 \begin{verbatim}
 my $pdfannex_rc = `kpsewhich -format=texmfscripts pdfannex_latexmkrc`;
 $pdfannex_rc =~ s/\r?\n\z//;
@@ -216,6 +220,7 @@ die "pdfannex latexmk integration not found\n"
     unless $pdfannex_rc && -f $pdfannex_rc;
 require $pdfannex_rc;
 \end{verbatim}
+}
 
 With it enabled, use \texttt{latexmk document.tex}. The helper initializes
 request recording, prepares new sources after the discovery pass, and lets
@@ -225,9 +230,12 @@ already-locked sources remain explicit.
 \texttt{prepare} resolves and locks new sources; \texttt{update} explicitly
 re-resolves them; \texttt{status} checks resolver-backed sources for changes;
 and \texttt{verify} checks the lock and local artifact store without contacting
-resolvers. Plain file paths are handled by the CLI itself. Other sources need
-an executable named \texttt{pdfannex-resolver-SCHEME} on \texttt{PATH}. The
-docstore example is a separate adapter and requires \texttt{curl} when it
+resolvers. The CLI handles plain file paths itself. Other sources need an
+executable on \texttt{PATH} named:
+\begin{quote}
+\texttt{pdfannex-resolver-SCHEME}
+\end{quote}
+The docstore example is a separate adapter and requires \texttt{curl} when it
 contacts its HTTP service. Locked rebuilds use the stored PDFs and do not need
 the resolver or curl.
 
