@@ -266,17 +266,23 @@ class AdapterPackage(unittest.TestCase):
                         "unless $pdfannex_rc && -f $pdfannex_rc;\n"
                         "require $pdfannex_rc;\n"
                     )
-                    for flag, engine in LATEXMK_TEST_ENGINES:
+                    for index, (flag, engine) in enumerate(LATEXMK_TEST_ENGINES):
                         automated = work / f"automated-{engine}"
                         automated.mkdir()
-                        automated_projects.append((flag, automated))
+                        output_dir = automated
+                        project_latexmkrc = latexmkrc
+                        if index == 0:
+                            output_dir = automated / "build"
+                            output_dir.mkdir()
+                            project_latexmkrc = "$out_dir = 'build';\n" + latexmkrc
+                        automated_projects.append((flag, automated, output_dir))
                         for name, text in (
                             ("a1", "FIRSTANNEX"),
                             ("a3", "THIRDANNEX"),
                             ("local", "LOCALANNEX"),
                         ):
                             make_pdf(automated, name, text, env)
-                        (automated / ".latexmkrc").write_text(latexmkrc)
+                        (automated / ".latexmkrc").write_text(project_latexmkrc)
                         (automated / "host.tex").write_text(SHOWCASE_TEX)
                         built = run(
                             [
@@ -302,7 +308,9 @@ class AdapterPackage(unittest.TestCase):
                         )
                         self.assertIn("pdfannex: verify ok", prepared.stdout)
                         text = run(
-                            ["pdftotext", "host.pdf", "-"], automated, env
+                            ["pdftotext", str(output_dir / "host.pdf"), "-"],
+                            automated,
+                            env,
                         ).stdout
                         self.assertIn("LATEST", text)
                         for expected in (
@@ -356,7 +364,7 @@ class AdapterPackage(unittest.TestCase):
             shutil.rmtree(work / "store")
             (work / "a.pdf").unlink()
             if CAN_LATEXMK_TEST:
-                for flag, automated in automated_projects:
+                for flag, automated, output_dir in automated_projects:
                     for name in ("a1.pdf", "a3.pdf", "local.pdf"):
                         (automated / name).unlink()
                     for suffix in (
@@ -367,7 +375,7 @@ class AdapterPackage(unittest.TestCase):
                         ".out",
                         ".pdf",
                     ):
-                        (automated / f"host{suffix}").unlink(missing_ok=True)
+                        (output_dir / f"host{suffix}").unlink(missing_ok=True)
                     offline = run(
                         [
                             "latexmk",
@@ -384,7 +392,9 @@ class AdapterPackage(unittest.TestCase):
                         offline.returncode, 0, offline.stdout + offline.stderr
                     )
                     text = run(
-                        ["pdftotext", "host.pdf", "-"], automated, env
+                        ["pdftotext", str(output_dir / "host.pdf"), "-"],
+                        automated,
+                        env,
                     ).stdout
                     self.assertIn("LATEST", text)
                     for expected in (

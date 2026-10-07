@@ -1,3 +1,5 @@
+use File::Copy qw(copy);
+
 our $pre_tex_code;
 $pre_tex_code .= ' ' if length $pre_tex_code;
 $pre_tex_code .= '\def\PdfAnnexLatexmkIntegration{1}';
@@ -37,7 +39,15 @@ push @{$hooks{after_xlatex_analysis}}, sub {
     die "pdfannex latexmk integration: latexmk did not provide the job name\n"
         unless defined $jobname && length $jobname;
     $jobname =~ s/\.tex\z//;
-    return unless -f "$jobname.pdfannex-requests";
+    my $requests_file = "$jobname.pdfannex-requests";
+    if (defined $out_dir && length $out_dir && $out_dir ne '.') {
+        my $output_requests_file = "$out_dir/$requests_file";
+        if (-f $output_requests_file) {
+            copy($output_requests_file, $requests_file)
+                or die "pdfannex latexmk integration: cannot copy $output_requests_file to $requests_file: $!\n";
+        }
+    }
+    return unless -f $requests_file;
 
     my $before = pdfannex_latexmk_read('.pdfannex/resolved.tex');
     pdfannex_latexmk_run('prepare', "$jobname.tex");

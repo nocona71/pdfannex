@@ -34,3 +34,4 @@ Add a new file whenever a design or process decision is made. Never silently cha
 | 0027 | [Document manual native TeX Live installation check](0027-manual-native-texlive-sanity-check.md) | accepted |
 | 0028 | [Opt-in `latexmk` source bootstrap](0028-opt-in-latexmk-bootstrap.md) | accepted |
 | 0029 | [Install TDS artifacts in a native user tree](0029-texmfhome-tds-installer.md) | accepted |
+| 0030 | [Support `latexmk` output directories](0030-latexmk-output-directories.md) | accepted |
