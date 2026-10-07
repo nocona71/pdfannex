@@ -51,6 +51,10 @@ are discovered on `PATH` or in the TeX scripts tree.
 
 Development: `make test-fast` runs the focused core packaging and TDS-installer tests; `make check` runs the core smoke and integration tests; `make e2e` installs the core CTAN archive into a clean TEXMFHOME and tests a locked build; `make test` runs l3build; `make doc` builds the manual; and `make package` creates the core CTAN archive. CI also runs a clean-container TeX Live package-manager test that installs the core TDS package and tests local-PDF inclusion. The resolver example has its own tests and package workflow in the [separate repository](https://github.com/nocona71/pdfannex-docstore), which tests against this repository as a sibling checkout.
 
+GitHub Releases are validated, packaged, tested, and then submitted to CTAN
+automatically. Configure the `CTAN_EMAIL` Actions secret before the first
+submission; see the [CTAN release guide](docs/ctan-releases.md).
+
 For a persistent install of the core package artifact into a host TeX Live user's tree, see the [manual native TeX Live sanity check](./docs/manual-native-texlive-sanity-check.md).
 
 The devcontainer includes Docker-outside-of-Docker for running Docker-based

@@ -41,3 +41,4 @@ Add a new file whenever a design or process decision is made. Never silently cha
 | 0034 | [Preserve local PDF paths literally](0034-preserve-local-pdf-paths-literally.md) | accepted |
 | 0035 | [Track reproducible showcase PDF fixtures](0035-track-showcase-pdf-fixtures.md) | accepted |
 | 0036 | [Use larger manual PDF previews](0036-larger-manual-pdf-previews.md) | accepted |
+| 0037 | [Submit CTAN releases after tagged release checks](0037-submit-ctan-after-release-checks.md) | accepted |
