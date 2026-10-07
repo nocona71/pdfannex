@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/nocona71/pdfannex/compare/pdfannex-v0.4.0...pdfannex-v0.5.0) (2026-10-07)
+
+
+### Features
+
+* add latexmk bootstrap and TDS installer ([#22](https://github.com/nocona71/pdfannex/issues/22)) ([f6ce871](https://github.com/nocona71/pdfannex/commit/f6ce871942841dd79da1b79a1b158b19b62a8a00))
+
 ## [0.4.0](https://github.com/nocona71/pdfannex/compare/pdfannex-v0.3.1...pdfannex-v0.4.0) (2026-10-07)
 
 
