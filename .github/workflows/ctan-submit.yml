@@ -9,6 +9,11 @@ on:
         description: Published release tag to submit
         required: true
         type: string
+      announcement:
+        description: Optional CTAN announcement override
+        required: false
+        default: ""
+        type: string
     secrets:
       CTAN_EMAIL:
         description: Email address for the CTAN uploader
@@ -16,90 +21,207 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: Published release tag to submit
-        required: true
+        description: Leave blank to list eligible tags; otherwise enter one exactly
+        required: false
+        default: ""
         type: string
+      announcement:
+        description: Optional CTAN announcement override; blank uses release notes
+        required: false
+        default: ""
+        type: string
+      confirm_ctan_not_received:
+        description: Confirm you checked for an earlier successful CTAN receipt before retrying
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: write
 
 jobs:
+  resolve-release:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      run_pipeline: ${{ steps.resolve.outputs.run_pipeline }}
+      release_tag: ${{ steps.resolve.outputs.release_tag }}
+    steps:
+      - name: Checkout workflow helpers from main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - name: Resolve and validate release selection
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          WORKFLOW_EVENT: ${{ github.event_name }}
+          WORKFLOW_REF: ${{ github.ref }}
+          RELEASE_TAG: ${{ inputs.release_tag || github.event.release.tag_name || '' }}
+        run: |
+          python3 .github/scripts/ctan_release_selection.py \
+            --event "$WORKFLOW_EVENT" \
+            --ref "$WORKFLOW_REF" \
+            --tag "$RELEASE_TAG"
+
+      - name: Check uploader email is configured
+        if: steps.resolve.outputs.run_pipeline == 'true'
+        env:
+          CTAN_EMAIL: ${{ secrets.CTAN_EMAIL }}
+        run: |
+          if [[ -z "$CTAN_EMAIL" ]]; then
+            echo "::error::Configure the CTAN_EMAIL Actions secret before submission."
+            exit 1
+          fi
+
+      - name: Require CTAN receipt check for manual dispatch
+        if: steps.resolve.outputs.run_pipeline == 'true' && github.event_name == 'workflow_dispatch'
+        env:
+          CONFIRM_NOT_RECEIVED: ${{ inputs.confirm_ctan_not_received }}
+        run: |
+          if [[ "$CONFIRM_NOT_RECEIVED" != "true" ]]; then
+            echo "::error::Check the previous CTAN upload response and CTAN's Unprocessed Uploads and pdfannex package pages before confirming a retry."
+            exit 1
+          fi
+
   ctan-archive:
+    needs: resolve-release
+    if: needs.resolve-release.outputs.run_pipeline == 'true'
     permissions:
       contents: write
     uses: ./.github/workflows/ctan-release.yml
     with:
-      release_tag: ${{ inputs.release_tag || github.event.release.tag_name }}
+      release_tag: ${{ needs.resolve-release.outputs.release_tag }}
 
   ctan-e2e:
-    needs: ctan-archive
+    needs: [resolve-release, ctan-archive]
+    if: needs.resolve-release.outputs.run_pipeline == 'true'
     permissions:
       contents: read
     uses: ./.github/workflows/ctan-e2e.yml
     with:
-      release_tag: ${{ inputs.release_tag || github.event.release.tag_name }}
+      release_tag: ${{ needs.resolve-release.outputs.release_tag }}
+      artifact: pdfannex-ctan-archive
       tds_artifact: pdfannex-tds-archive
 
+  prepare-review:
+    needs: [resolve-release, ctan-archive, ctan-e2e]
+    if: needs.resolve-release.outputs.run_pipeline == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.preview.outputs.version }}
+      archive_sha256: ${{ steps.preview.outputs.archive_sha256 }}
+      announcement_sha256: ${{ steps.preview.outputs.announcement_sha256 }}
+    steps:
+      - name: Checkout release metadata from main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - name: Install LuaTeX
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends texlive-extra-utils
+
+      - name: Download the exact archive tested by E2E
+        uses: actions/download-artifact@v8
+        with:
+          name: pdfannex-ctan-archive
+          path: build
+
+      - name: Prepare announcement and render read-only review
+        id: preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CTAN_EMAIL: ${{ secrets.CTAN_EMAIL }}
+          RELEASE_TAG: ${{ needs.resolve-release.outputs.release_tag }}
+          ANNOUNCEMENT_OVERRIDE: ${{ inputs.announcement || '' }}
+        run: |
+          version="${RELEASE_TAG#pdfannex-v}"
+          archive="build/pdfannex-ctan-v${version}.zip"
+          announcement="build/ctan-announcement.txt"
+          if [[ -n "$ANNOUNCEMENT_OVERRIDE" ]]; then
+            printf '%s' "$ANNOUNCEMENT_OVERRIDE" >"$announcement"
+          else
+            gh release view "$RELEASE_TAG" --json body --jq '.body // empty' \
+              >"$announcement"
+          fi
+          archive_sha256="$(sha256sum "$archive" | cut -d' ' -f1)"
+          announcement_sha256="$(sha256sum "$announcement" | cut -d' ' -f1)"
+          texlua .github/scripts/ctan_submission_preview.lua \
+            "$version" "$archive" "$announcement" "$archive_sha256" \
+            >>"$GITHUB_STEP_SUMMARY"
+          {
+            echo "version=$version"
+            echo "archive_sha256=$archive_sha256"
+            echo "announcement_sha256=$announcement_sha256"
+          } >>"$GITHUB_OUTPUT"
+
+      - name: Preserve the reviewed announcement for submission
+        uses: actions/upload-artifact@v7
+        with:
+          name: pdfannex-ctan-announcement
+          path: build/ctan-announcement.txt
+          if-no-files-found: error
+
   submit:
-    needs: [ctan-archive, ctan-e2e]
+    needs: [resolve-release, ctan-archive, ctan-e2e, prepare-review]
+    if: needs.resolve-release.outputs.run_pipeline == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    environment:
+      name: ${{ github.event_name == 'workflow_dispatch' && 'ctan-manual-review' || 'ctan-automatic' }}
     permissions:
       contents: read
     steps:
-      - name: Checkout release source
+      - name: Checkout upload configuration from main
         uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.release_tag || github.event.release.tag_name }}
+          ref: main
 
       - name: Install l3build and curl
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends curl texlive-extra-utils
 
-      - name: Validate release tag, package version, and uploader email
-        env:
-          RELEASE_TAG: ${{ inputs.release_tag || github.event.release.tag_name }}
-          CTAN_EMAIL: ${{ secrets.CTAN_EMAIL }}
-        run: |
-          case "$RELEASE_TAG" in
-            pdfannex-v*) version="${RELEASE_TAG#pdfannex-v}" ;;
-            *)
-              echo "Unexpected release tag: $RELEASE_TAG" >&2
-              exit 1
-              ;;
-          esac
-          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Release tag does not contain a semantic version: $RELEASE_TAG" >&2
-            exit 1
-          fi
-          package_version="$(sed -E 's/[[:space:]]+# x-release-please-version$//' VERSION)"
-          if [[ "$package_version" != "$version" ]]; then
-            echo "VERSION does not match release tag $RELEASE_TAG" >&2
-            exit 1
-          fi
-          if [[ -z "$CTAN_EMAIL" ]]; then
-            echo "::error::Configure the CTAN_EMAIL Actions secret before submitting a release."
-            exit 1
-          fi
-          echo "VERSION=$version" >>"$GITHUB_ENV"
+      - name: Download the reviewed archive and announcement
+        uses: actions/download-artifact@v8
+        with:
+          name: pdfannex-ctan-archive
+          path: build
 
-      - name: Download the validated archive and release notes
+      - name: Download the reviewed announcement
+        uses: actions/download-artifact@v8
+        with:
+          name: pdfannex-ctan-announcement
+          path: build
+
+      - name: Verify reviewed payload
         env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ inputs.release_tag || github.event.release.tag_name }}
+          RELEASE_TAG: ${{ needs.resolve-release.outputs.release_tag }}
+          EXPECTED_ARCHIVE_SHA256: ${{ needs.prepare-review.outputs.archive_sha256 }}
+          EXPECTED_ANNOUNCEMENT_SHA256: ${{ needs.prepare-review.outputs.announcement_sha256 }}
         run: |
-          mkdir -p build
-          gh release download "$RELEASE_TAG" \
-            --pattern "pdfannex-ctan-v${VERSION}.zip" \
-            --dir build
-          cp "build/pdfannex-ctan-v${VERSION}.zip" pdfannex-ctan.zip
-          gh release view "$RELEASE_TAG" --json body --jq '.body // empty' \
-            >build/ctan-announcement.txt
-          if [[ ! -s build/ctan-announcement.txt ]]; then
-            echo "GitHub Release $RELEASE_TAG has no announcement text." >&2
+          VERSION="${RELEASE_TAG#pdfannex-v}"
+          archive="build/pdfannex-ctan-v${VERSION}.zip"
+          actual_archive_sha256="$(sha256sum "$archive" | cut -d' ' -f1)"
+          actual_announcement_sha256="$(sha256sum build/ctan-announcement.txt | cut -d' ' -f1)"
+          if [[ "$actual_archive_sha256" != "$EXPECTED_ARCHIVE_SHA256" ]]; then
+            echo "The archive differs from the reviewed archive." >&2
             exit 1
           fi
+          if [[ "$actual_announcement_sha256" != "$EXPECTED_ANNOUNCEMENT_SHA256" ]]; then
+            echo "The announcement differs from the reviewed announcement." >&2
+            exit 1
+          fi
+          cp "$archive" pdfannex-ctan.zip
+          echo "VERSION=$VERSION" >>"$GITHUB_ENV"
 
       - name: Submit package to CTAN
         env:

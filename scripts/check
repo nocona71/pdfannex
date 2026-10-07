@@ -16,6 +16,8 @@ python3 testfiles/test_pagination.py
 python3 testfiles/test_nup.py
 python3 testfiles/test_cli.py
 python3 testfiles/test_dod.py
+python3 testfiles/test_ctan_release_selection.py
+python3 testfiles/test_ctan_submission_preview.py
 
 # Same suites with sources locked through the CLI and original PDFs deleted.
 for t in geometry pagination nup dod; do
