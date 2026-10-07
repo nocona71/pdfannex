@@ -73,7 +73,7 @@ Try it: `python3 docstore_server.py ROOT --token SECRET` serves
 ## Use it with pdfannex
 
 1. Put `pdfannex-resolver-docstore` and `adapter-lib.lua` in one directory on
-   `PATH` (the CLI finds `pdfannex-resolver-SCHEME`).
+   `PATH` (the CLI finds and invokes the texlua script `pdfannex-resolver-SCHEME`).
 2. In the document, write the URI or define a command:
 
    ```latex
@@ -96,7 +96,7 @@ environment, never in the lock, the requests file or the document.
 
 ## Build your own adapter
 
-1. Copy this directory and rename the executable to `pdfannex-resolver-SCHEME`.
+1. Copy this directory and rename the script to `pdfannex-resolver-SCHEME`.
 2. Replace `SCHEME`, `parse_source`, `fetch` and the service calls; keep the
    protocol plumbing.
 3. Adapt `test_docstore.py`. The module tests cover what an adapter must get

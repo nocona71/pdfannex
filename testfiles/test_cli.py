@@ -22,9 +22,12 @@ HOST = r"""\documentclass{article}\usepackage{pdfannex}
 """
 
 
-def sh(cmd, cwd, check=True, **kw):
-    env = {"PATH": os.environ["PATH"], "HOME": str(cwd), "TEXINPUTS": f"{ROOT / 'tex'}:"}
-    return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, check=check, env=env, **kw)
+def sh(cmd, cwd, check=True, env=None, **kw):
+    run_env = os.environ.copy()
+    run_env.update({"HOME": str(cwd), "TEXINPUTS": f"{ROOT / 'tex'}{os.pathsep}"})
+    if env:
+        run_env.update(env)
+    return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, check=check, env=run_env, **kw)
 
 
 def pdf(cwd, name, text):
@@ -42,8 +45,8 @@ def write_requests(cwd, *sources):
         "".join(s.encode().hex().upper() + "\n" for s in sources))
 
 
-def cli(cwd, *args, check=True):
-    return sh(["texlua", str(CLI), *args], cwd, check=check)
+def cli(cwd, *args, check=True, env=None):
+    return sh(["texlua", str(CLI), *args], cwd, check=check, env=env)
 
 
 def text(cwd):
@@ -68,12 +71,18 @@ class Cli(unittest.TestCase):
 
     def test_files_are_confined_to_the_project(self):
         (self.d / "sub").mkdir()
-        os.symlink("/etc/hostname", self.d / "link.pdf")
-        for src, code in [("../x.pdf", "permission-denied"),
-                          ("/etc/passwd", "invalid-source"),
-                          ("link.pdf", "permission-denied"),
-                          ("pdfannex://file/a.pdf?rev=2", "unsupported-source-option"),
-                          ("missing.pdf", "resource-not-found")]:
+        cases = [("../x.pdf", "permission-denied"),
+                 ("/etc/passwd", "invalid-source"),
+                 ("pdfannex://file/a.pdf?rev=2", "unsupported-source-option"),
+                 ("missing.pdf", "resource-not-found")]
+        try:
+            target = self.d / "target.pdf"
+            target.write_bytes(b"")
+            os.symlink(target, self.d / "link.pdf")
+            cases.append(("link.pdf", "permission-denied"))
+        except (NotImplementedError, OSError):
+            pass
+        for src, code in cases:
             write_requests(self.d, src)
             run = cli(self.d, "prepare", "host.tex", check=False)
             self.assertNotEqual(run.returncode, 0, src)
@@ -186,6 +195,64 @@ class Cli(unittest.TestCase):
         run = latex(self.d, "pdfannex://paperless/1")
         self.assertNotEqual(run.returncode, 0)
         self.assertIn("is not resolved", run.stdout)
+
+
+@unittest.skipUnless(shutil.which("texlua"), "texlua missing")
+class CliProcess(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.d = Path(self.tmp.name)
+        self.project = self.d / "project dir"
+        self.project.mkdir()
+        cli(self.project, "init")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_file_source_with_path_spaces(self):
+        shutil.copy(ROOT / "testfiles" / "support" / "a1.pdf", self.project / "a1.pdf")
+        write_requests(self.project, "a1.pdf")
+        doc = str(Path("project dir") / "host.tex")
+        run = cli(self.d, "prepare", doc)
+        self.assertIn("1 source(s) locked", run.stdout)
+        self.assertTrue((self.project / "pdfannex.lock").exists())
+
+    def test_missing_resolver_reports_on_stderr(self):
+        write_requests(self.project, "pdfannex://nowhere/1")
+        run = cli(self.project, "prepare", "host.tex", check=False)
+        self.assertNotEqual(run.returncode, 0)
+        self.assertIn("no resolver 'pdfannex-resolver-nowhere'", run.stderr)
+        self.assertEqual(run.stdout, "")
+
+    @unittest.skipUnless(os.name == "nt", "Windows drive paths only")
+    def test_drive_path_is_not_a_project_relative_file(self):
+        write_requests(self.project, "C:/Windows/win.ini")
+        run = cli(self.project, "prepare", "host.tex", check=False)
+        self.assertNotEqual(run.returncode, 0)
+        self.assertIn("invalid-source", run.stderr)
+
+    def test_resolver_script_on_path_runs_through_texlua(self):
+        resolver_dir = self.d / "resolver %PATH% scripts"
+        resolver_dir.mkdir()
+        resolver = resolver_dir / "pdfannex-resolver-mock"
+        resolver.write_text(
+            'local request = io.stdin:read("a")\n'
+            'if request:find(\'"operation":"describe"\', 1, true) then\n'
+            '  io.write(\'{"protocolVersions":[1],"schemes":["mock"],"capabilities":["resolve"]}\')\n'
+            'else\n'
+            '  local path = assert(os.getenv("PDFANNEX_TEST_PDF"))\n'
+            '  path = path:gsub("\\\\", "\\\\\\\\"):gsub(\'"\', \'\\\\"\')\n'
+            '  io.write(\'{"protocolVersion":1,"results":[{"id":"pdfannex://mock/1",\' ..\n'
+            '    \'"resolved":"pdfannex://mock/1","artifact":{"path":"\' .. path .. \'"}}]}\')\n'
+            'end\n'
+        )
+        write_requests(self.project, "pdfannex://mock/1")
+        env = {
+            "PATH": str(resolver_dir) + os.pathsep + os.environ["PATH"],
+            "PDFANNEX_TEST_PDF": str(ROOT / "testfiles" / "support" / "a1.pdf"),
+        }
+        run = cli(self.project, "prepare", "host.tex", env=env)
+        self.assertIn("1 source(s) locked", run.stdout)
 
 
 if __name__ == "__main__":
