@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.4](https://github.com/nocona71/pdfannex/compare/pdfannex-v0.7.3...pdfannex-v0.7.4) (2026-10-07)
+
+
+### Bug Fixes
+
+* guard first-time CTAN submissions ([#49](https://github.com/nocona71/pdfannex/issues/49)) ([dcbe101](https://github.com/nocona71/pdfannex/commit/dcbe1019724e2a220e4b69e768a43b2449ee8651))
+
 ## [0.7.3](https://github.com/nocona71/pdfannex/compare/pdfannex-v0.7.2...pdfannex-v0.7.3) (2026-10-07)
 
 
