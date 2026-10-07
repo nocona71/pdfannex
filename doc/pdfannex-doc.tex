@@ -35,6 +35,18 @@ See \annexref{cv} on page \annexpageref{cv}.
 includes all pages of \emph{file} (or those selected by \texttt{pages}) as one
 annex.
 
+The path is a normal LaTeX argument, so escape TeX-special characters as usual.
+Local paths are preserved literally, including percent sequences; for example:
+
+\begin{verbatim}
+\includeannex{scans/Steuerbescheid 2025 Ü.pdf}{Tax assessment}
+\includeannex{scans/literal\%41\_draft.pdf}{Draft}
+\end{verbatim}
+
+Core tests cover spaces, Unicode, nested directories, \texttt{\%}, \texttt{\&},
+\texttt{\#}, \texttt{\_}, \texttt{?}, \texttt{=}, and leading hyphens on
+pdfLaTeX, XeLaTeX and LuaLaTeX. Other active characters or non-default
+catcodes are not guaranteed.
 
 \verb|\NewAnnexSource{|\emph{command}\verb|}{|\emph{scheme}\verb|}|
 defines \emph{command} like \verb|\includeannex|, but its first mandatory

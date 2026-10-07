@@ -3,7 +3,7 @@
 Split by topic from the original monolithic v0.1 spec (see git history).
 
 - [01-overview](01-overview.md) — 4643 B
-- [02-pdf-core-and-latex-api](02-pdf-core-and-latex-api.md) — 2867 B
+- [02-pdf-core-and-latex-api](02-pdf-core-and-latex-api.md) — 3445 B
 - [03-inclusion-pipeline-and-multipass](03-inclusion-pipeline-and-multipass.md) — 3491 B
 - [04-geometry-and-layouts](04-geometry-and-layouts.md) — 2694 B
 - [05-localization-policies-and-compat](05-localization-policies-and-compat.md) — 1806 B

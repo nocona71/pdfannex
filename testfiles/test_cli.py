@@ -1,4 +1,4 @@
-"""End-to-end tests of the pdfannex CLI (built-in file handling)."""
+"""End-to-end tests of local file inclusion and the optional CLI."""
 
 import json
 import os
@@ -13,6 +13,16 @@ ROOT = Path(__file__).resolve().parents[1]
 
 CLI = ROOT / "cli" / "pdfannex"
 NEEDS = shutil.which("texlua") and shutil.which("pdflatex") and shutil.which("pdftotext")
+LATEX_ENGINES = ("pdflatex", "xelatex", "lualatex")
+PLAIN_NEEDS = shutil.which("pdftotext") and all(shutil.which(engine) for engine in LATEX_ENGINES)
+LOCAL_NAMES = (
+    "sub dir/Steuerbescheid 2025 \u00dc.pdf",
+    "100%.pdf",
+    "a&b#c_d.pdf",
+    "x?y=1.pdf",
+    "-option.pdf",
+    "literal%41.pdf",
+)
 
 SRC = r"\documentclass{article}\pagestyle{empty}\begin{document}%s\end{document}"
 HOST = r"""\documentclass{article}\usepackage{pdfannex}
@@ -43,6 +53,10 @@ def pdf(cwd, name, text):
     sh(["pdflatex", "-interaction=batchmode", f"{name}.tex"], cwd)
 
 
+def tex_file_argument(name):
+    return name.replace("%", r"\%").replace("#", r"\#").replace("&", r"\&").replace("_", r"\_")
+
+
 def latex(cwd, source="a.pdf"):
     (Path(cwd) / "host.tex").write_text(HOST % source)
     return sh(["pdflatex", "-interaction=nonstopmode", "-halt-on-error", "host.tex"], cwd, check=False)
@@ -59,6 +73,43 @@ def cli(cwd, *args, check=True, env=None):
 
 def text(cwd):
     return sh(["pdftotext", "host.pdf", "-"], cwd).stdout
+
+
+@unittest.skipUnless(PLAIN_NEEDS, "pdflatex/xelatex/lualatex/pdftotext missing")
+class PlainLocalFileNames(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.d = Path(self.tmp.name)
+        includes = []
+        for i, name in enumerate(LOCAL_NAMES):
+            pdf(self.d, f"source{i}", f"NAME{i}")
+            path = self.d / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(self.d / f"source{i}.pdf", path)
+            includes.append(
+                r"\includeannex[page-style=empty]{%s}{N%d}" % (tex_file_argument(name), i)
+            )
+        (self.d / "host.tex").write_text(
+            r"\documentclass{article}\usepackage[utf8]{inputenc}\usepackage{pdfannex}"
+            r"\pagestyle{empty}\begin{document}" + "".join(includes) + r"\end{document}"
+        )
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_local_names_are_literal_across_engines_without_the_cli(self):
+        for engine in LATEX_ENGINES:
+            with self.subTest(engine=engine):
+                run = sh(
+                    [engine, "-interaction=nonstopmode", "-halt-on-error", "host.tex"],
+                    self.d,
+                    check=False,
+                )
+                self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
+                output = text(self.d)
+                for i in range(len(LOCAL_NAMES)):
+                    self.assertIn(f"NAME{i}", output)
+                self.assertFalse((self.d / "host.pdfannex-requests").exists())
 
 
 @unittest.skipUnless(NEEDS, "texlua/pdflatex/pdftotext missing")
@@ -155,7 +206,7 @@ class Cli(unittest.TestCase):
             pdf(self.d, f"n{i}", f"NAME{i}")
             shutil.move(self.d / f"n{i}.pdf", self.d / name)
         tex = "".join(r"\includeannex[page-style=empty]{%s}{N%d}" % (
-            n.replace("%", r"\%").replace("#", r"\#").replace("&", r"\&").replace("_", r"\_"), i) for i, n in enumerate(names))
+            tex_file_argument(n), i) for i, n in enumerate(names))
         (self.d / "host.tex").write_text(
             r"\documentclass{article}\usepackage[utf8]{inputenc}\usepackage{pdfannex}"
             r"\begin{document}" + tex + r"\end{document}")
