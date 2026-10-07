@@ -126,8 +126,13 @@ jobs:
 
       - name: Install LuaTeX
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends texlive-extra-utils
+          apt_options=(
+            -o Acquire::Retries=1
+            -o Acquire::http::Timeout=10
+            -o Acquire::https::Timeout=10
+          )
+          sudo apt-get "${apt_options[@]}" update
+          sudo apt-get "${apt_options[@]}" install -y --no-install-recommends texlive-extra-utils
 
       - name: Download the exact archive tested by E2E
         uses: actions/download-artifact@v8
@@ -187,8 +192,13 @@ jobs:
 
       - name: Install l3build and curl
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends curl texlive-extra-utils
+          apt_options=(
+            -o Acquire::Retries=1
+            -o Acquire::http::Timeout=10
+            -o Acquire::https::Timeout=10
+          )
+          sudo apt-get "${apt_options[@]}" update
+          sudo apt-get "${apt_options[@]}" install -y --no-install-recommends curl texlive-extra-utils
 
       - name: Download the reviewed archive and announcement
         uses: actions/download-artifact@v8
