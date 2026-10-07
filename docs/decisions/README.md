@@ -21,7 +21,7 @@ Add a new file whenever a design or process decision is made. Never silently cha
 | 0014 | [Example docstore resolver and `\NewAnnexSource`](0014-example-docstore-resolver.md) | partly superseded by 0016 and 0032 |
 | 0015 | [CLI handles plain files itself](0015-cli-handles-plain-files.md) | accepted |
 | 0016 | [Package adapters for CTAN distribution](0016-package-adapters-for-ctan.md) | accepted |
-| 0017 | [Keep adapter CI separable](0017-adapter-ci-composite-action.md) | superseded by 0032 |
+| 0017 | [Keep adapter CI separable](0017-adapter-ci-composite-action.md) | adapter extracted; superseded by 0032 |
 | 0018 | [Track only intentional project files](0018-track-only-intentional-files.md) | accepted |
 | 0019 | [Fast isolated package tests and CTAN end-to-end coverage](0019-package-test-levels.md) | superseded by 0020 and 0032 |
 | 0020 | [TeX Live package-manager end-to-end tests](0020-texlive-package-manager-e2e.md) | partly superseded by 0032 |
@@ -35,5 +35,5 @@ Add a new file whenever a design or process decision is made. Never silently cha
 | 0028 | [Opt-in `latexmk` source bootstrap](0028-opt-in-latexmk-bootstrap.md) | accepted |
 | 0029 | [Install TDS artifacts in a native user tree](0029-texmfhome-tds-installer.md) | partly superseded by 0032 |
 | 0030 | [Support `latexmk` output directories](0030-latexmk-output-directories.md) | accepted |
-| 0031 | [Smoke-test release TDS artifacts with first-build `latexmk`](0031-release-tds-latexmk-smoke-test.md) | partly superseded by 0032 |
+| 0031 | [Smoke-test release TDS artifacts with first-build `latexmk`](0031-release-tds-latexmk-smoke-test.md) | adapter half moved to pdfannex-docstore; partly superseded by 0032 |
 | 0032 | [Keep core packaging and QA in the core repository](0032-core-repository-owns-core-package-only.md) | accepted |

@@ -63,7 +63,7 @@ jobs:
           name: ${{ inputs.tds_artifact }}
           path: tds
 
-      - name: Build TDS archives when not supplied
+      - name: Build TDS archive when not supplied
         if: inputs.tds_artifact == ''
         run: |
           sudo apt-get update

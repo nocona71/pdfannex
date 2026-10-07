@@ -7,8 +7,6 @@
 *.fdb_latexmk
 *.synctex.gz
 build/
-/adapter-example/pdfannex-docstore-ctan.zip
-/adapter-example/ctan/pdfannex-docstore-doc.pdf
 /doc/pdfannex-doc.pdf
 missfont.log
 .DS_Store
