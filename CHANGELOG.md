@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/nocona71/pdfannex/compare/pdfannex-v0.6.0...pdfannex-v0.6.1) (2026-10-07)
+
+
+### Bug Fixes
+
+* support references in moving PDF contexts ([#31](https://github.com/nocona71/pdfannex/issues/31)) ([444e339](https://github.com/nocona71/pdfannex/commit/444e339aaebd11b76e84cfd790c793ff74105d05))
+
 ## [0.6.0](https://github.com/nocona71/pdfannex/compare/pdfannex-v0.5.1...pdfannex-v0.6.0) (2026-10-07)
 
 
