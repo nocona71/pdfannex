@@ -98,6 +98,16 @@ Example:
 }
 ```
 
+The PDF path is a normal LaTeX argument. TeX-special characters MUST be
+escaped using ordinary LaTeX syntax. After TeX expansion, `pdfannex.sty` MUST
+preserve the local path literally; it MUST NOT URL-decode percent sequences or
+interpret leading hyphens, question marks, or equals signs as options.
+
+Core tests MUST cover paths with spaces, Unicode, nested directories, `%`, `&`,
+`#`, `_`, `?`, `=`, leading hyphens, and literal percent sequences across
+pdfLaTeX, XeLaTeX, and LuaLaTeX. This minimum set does not guarantee arbitrary
+active characters or non-default catcodes.
+
 ---
 
 ## External source inclusion

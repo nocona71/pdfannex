@@ -38,3 +38,4 @@ Add a new file whenever a design or process decision is made. Never silently cha
 | 0031 | [Smoke-test release TDS artifacts with first-build `latexmk`](0031-release-tds-latexmk-smoke-test.md) | adapter half moved to pdfannex-docstore; partly superseded by 0032 |
 | 0032 | [Keep core packaging and QA in the core repository](0032-core-repository-owns-core-package-only.md) | accepted |
 | 0033 | [Use plain-text annex references in PDF bookmarks](0033-plain-text-references-in-bookmarks.md) | accepted |
+| 0034 | [Preserve local PDF paths literally](0034-preserve-local-pdf-paths-literally.md) | accepted |
