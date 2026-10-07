@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/nocona71/pdfannex/compare/pdfannex-v0.6.2...pdfannex-v0.7.0) (2026-10-07)
+
+
+### Features
+
+* add manual CTAN submission review ([#39](https://github.com/nocona71/pdfannex/issues/39)) ([ce2bf09](https://github.com/nocona71/pdfannex/commit/ce2bf098d245663c6ea8a1c2c665c77e957daaa1))
+
 ## [0.6.2](https://github.com/nocona71/pdfannex/compare/pdfannex-v0.6.1...pdfannex-v0.6.2) (2026-10-07)
 
 
