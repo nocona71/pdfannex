@@ -24,8 +24,13 @@ jobs:
 
       - name: Install TeX tooling
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          apt_options=(
+            -o Acquire::Retries=1
+            -o Acquire::http::Timeout=10
+            -o Acquire::https::Timeout=10
+          )
+          sudo apt-get "${apt_options[@]}" update
+          sudo apt-get "${apt_options[@]}" install -y --no-install-recommends \
             latexmk make poppler-utils shellcheck texlive-extra-utils texlive-fonts-recommended texlive-latex-base \
             texlive-latex-extra texlive-luatex texlive-xetex
 
