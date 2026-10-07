@@ -130,7 +130,7 @@ jobs:
       - name: Test core package in a fresh container
         run: |
           docker run --rm -v "$PWD:/w:ro" pdfannex-e2e:clean bash -euxo pipefail -c '
-            /w/scripts/e2e-ctan /w/archive/core/pdfannex-ctan-*.zip
+            /w/scripts/e2e-ctan /w/archive/core/pdfannex-ctan*.zip
             python3 /w/testfiles/texlive_e2e.py \
               core /w/tds/core/pdfannex.tds.zip
           '
@@ -139,8 +139,8 @@ jobs:
         run: |
           docker run --rm -v "$PWD:/w:ro" pdfannex-e2e:clean bash -euxo pipefail -c '
             python3 /w/adapter-example/e2e_ctan.py \
-              /w/archive/core/pdfannex-ctan-*.zip \
-              /w/archive/adapter/pdfannex-docstore-ctan-*.zip
+              /w/archive/core/pdfannex-ctan*.zip \
+              /w/archive/adapter/pdfannex-docstore-ctan*.zip
             python3 /w/testfiles/texlive_e2e.py \
               adapter \
               /w/tds/core/pdfannex.tds.zip \
