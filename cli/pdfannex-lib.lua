@@ -210,6 +210,10 @@ local function absolute_path(path)
   return M.normalize_path(lfs.currentdir() .. "/" .. path)
 end
 
+local function windows_path(path)
+  return absolute_path(path):gsub("/", "\\")
+end
+
 -- Write to a temporary sibling and rename, so readers never see a partial file.
 function M.atomic_write(path, data)
   local tmp = path .. ".tmp"
@@ -217,8 +221,8 @@ function M.atomic_write(path, data)
   if not ok then return nil, err end
   local renamed, rename_err = os.rename(tmp, path)
   if renamed or not windows or not M.exists(path) then return renamed, rename_err end
-  local command = "[IO.File]::Replace(" .. powershell_quote(absolute_path(tmp)) .. ","
-    .. powershell_quote(absolute_path(path)) .. ",$null)"
+  local command = "[IO.File]::Replace(" .. powershell_quote(windows_path(tmp)) .. ","
+    .. powershell_quote(windows_path(path)) .. ",$null)"
   local replaced, code = M.run_process({
     "powershell.exe", "-NoProfile", "-NonInteractive", "-Command", command,
   })

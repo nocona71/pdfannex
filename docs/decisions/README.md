@@ -28,3 +28,4 @@ Add a new file whenever a design or process decision is made. Never silently cha
 | 0021 | [Use the host Docker daemon from the devcontainer](0021-devcontainer-docker-access.md) | accepted |
 | 0022 | [Cross-platform CLI resolver execution](0022-cross-platform-cli-resolvers.md) | accepted |
 | 0023 | [Quote Windows child-process arguments](0023-windows-child-process-arguments.md) | accepted |
+| 0024 | [Use native Windows paths for atomic replacement](0024-native-windows-paths-for-file-replacement.md) | accepted |
