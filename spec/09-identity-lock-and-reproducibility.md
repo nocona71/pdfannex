@@ -312,6 +312,22 @@ pdfannex prepare
 
 when request state changes or required generated state is missing.
 
+The core CTAN distribution supplies `pdfannex_latexmkrc`. An opt-in
+project-local `.latexmkrc` loads that file. When enabled, the integration MUST:
+
+- initialize request recording before the first TeX pass if `pdfannex.lock` is
+  absent;
+- let a discovery pass record requests without treating unresolved sources as
+  a final TeX error;
+- run `pdfannex prepare` after TeX has written request state;
+- rerun TeX when the generated resolution map changes;
+- fail the `latexmk` build if initialization or preparation fails.
+
+The integration MUST NOT resolve sources during TeX execution, advance locked
+sources automatically, or modify a user's global `latexmk` configuration.
+Without the project-local opt-in, direct engine runs retain the unresolved
+source error. Updates remain explicit through `pdfannex update`.
+
 ---
 
 # `latexmk` Integration Reality

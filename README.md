@@ -36,12 +36,20 @@ Build once without `-halt-on-error` before `prepare` if the document has an
 unresolved `pdfannex://` source, because that error can stop the build before
 later sources are recorded.
 
+For a one-command `latexmk` workflow, enable the optional project-local
+integration described in the [latexmk integration guide](https://github.com/nocona71/pdfannex/blob/main/docs/latexmk-integration.md).
+It bootstraps the lock, prepares new requests after the discovery pass, and
+lets `latexmk document.tex` rerun TeX. Without that opt-in, direct engine runs
+and ordinary `latexmk` retain the explicit CLI workflow above.
+
 The CLI is a TeXLua script. TeX Live installs scripts in its scripts tree and
 normally makes commands available on `PATH`; otherwise invoke the installed
 script with `texlua` or add its scripts directory to `PATH`. Resolver scripts
 are discovered on `PATH` or in the TeX scripts tree.
 
 Development: `make test-fast` (isolated core/adapter package-install and locked-build test), `make check` (full smoke/integration tests), `make e2e` (install both CTAN archives into a clean TEXMFHOME and test locked builds), `make test` (l3build), `make doc`, `make package` (core CTAN archive), `make adapter-package` (docstore adapter archive). CI also runs two separate clean-container TeX Live package-manager tests: one installs the core TDS package and tests local-PDF inclusion; the other installs the adapter through `tlmgr`, verifies automatic installation of its core dependency, and tests local and docstore PDFs.
+
+For a persistent install of the core package artifact into a host TeX Live user's tree, see the [manual native TeX Live sanity check](./docs/manual-native-texlive-sanity-check.md).
 
 The devcontainer includes Docker-outside-of-Docker for running Docker-based
 checks locally; it requires a Docker daemon on the host and grants the

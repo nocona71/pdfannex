@@ -1,0 +1,5 @@
+# 0028 Opt-in `latexmk` source bootstrap
+
+- Context: the explicit `pdfannex init` / discovery build / `pdfannex prepare` sequence made an initial document build fail when it contained unresolved external annexes, despite the v0.1 goal of `latexmk document.tex` after one-time integration enablement.
+- Decision: ship `pdfannex_latexmkrc` with the core CTAN/TDS package. A project-local `.latexmkrc` may load it. The helper initializes request recording, injects an integration marker for a non-fatal discovery pass, runs `pdfannex prepare` after TeX writes requests, and makes latexmk rerun when the resolution map changes. CLI failures fail the build. The helper never updates already-locked sources, and the package's normal unresolved-source error remains in effect without the opt-in.
+- Consequences: with the project helper enabled, `latexmk document.tex` can bootstrap and build external annexes in one invocation. Resolver credentials and network access remain confined to CLI preparation; direct engine invocations and projects without the helper retain existing behavior.

@@ -121,6 +121,7 @@
 % the resolution map is used instead of the original path.
 \cs_generate_variant:Nn \file_if_exist:nF { V }
 \cs_generate_variant:Nn \msg_error:nnn { nnV }
+\cs_generate_variant:Nn \msg_warning:nnn { nnV }
 \cs_new_protected:Npn \__pdfannex_strip_dot_slash:
   {
     \str_if_eq:eeT { \str_range:Nnn \l__pdfannex_key_str { 1 } { 2 } } { ./ }
@@ -177,7 +178,9 @@
         \str_if_eq:eeT { \str_range:Nnn \l__pdfannex_key_str { 1 } { 11 } } { pdfannex:// }
           {
             \bool_set_false:N \l__pdfannex_found_bool
-            \msg_error:nnV { pdfannex } { unresolved-source } \l__pdfannex_key_str
+            \cs_if_exist:NTF \PdfAnnexLatexmkIntegration
+              { \msg_warning:nnV { pdfannex } { unresolved-source-latexmk } \l__pdfannex_key_str }
+              { \msg_error:nnV { pdfannex } { unresolved-source } \l__pdfannex_key_str }
           }
       }
   }
@@ -328,6 +331,8 @@
 \msg_new:nnnn { pdfannex } { unresolved-source }
   { Source~'#1'~is~not~resolved. }
   { Run~'pdfannex~prepare~\c_sys_jobname_str.tex'~and~then~LaTeX~again. }
+\msg_new:nnn { pdfannex } { unresolved-source-latexmk }
+  { Source~'#1'~is~not~resolved;~the~latexmk~integration~will~prepare~it. }
 
 \ExplSyntaxOff
 

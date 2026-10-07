@@ -21,4 +21,4 @@
 ## CLI and resolver (Phase B/C slice)
 - `cli/pdfannex` with `init`, `prepare`, `update`, `status`, `verify`; project-local SHA-256 store, `pdfannex.lock`, `.pdfannex/resolved.tex`; built-in handling of plain files (decision 0015) and the example `adapter-example/pdfannex-resolver-docstore` (decision 0014). Tests: `testfiles/test_cli.py`, `adapter-example/` (adapter template with its own tests and `conformance.py`).
 - Done: CLI and basic command documentation are included in the CTAN/TDS package; TeXLua support files install under `scripts/pdfannex/`.
-- Not yet: `latexmk` helper, other resolvers (Paperless, MCP spike), optional adapter packages on CTAN.
+- Not yet: other resolvers (Paperless, MCP spike), optional adapter packages on CTAN.

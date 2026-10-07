@@ -3,6 +3,7 @@
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import tempfile
@@ -43,12 +44,39 @@ CAN_INSTALL_TEST = (
         for tool in ("texlua", "pdflatex", "pdftotext", "curl", "kpsewhich")
     )
 )
+CAN_LATEXMK_TEST = CAN_INSTALL_TEST and shutil.which("latexmk")
+LATEXMK_TEST_ENGINES = [("-pdf", "pdflatex")]
+LATEXMK_TEST_ENGINES.extend(
+    (f"-{engine}", engine)
+    for engine in ("xelatex", "lualatex")
+    if shutil.which(engine)
+)
 
 SOURCE_PDF = r"\documentclass{article}\pagestyle{empty}\begin{document}%s\end{document}"
 HOST_TEX = r"""\documentclass{article}\usepackage{pdfannex-docstore}
 \begin{document}
 \includedoc[page-style=empty]{memo}{Memo}
 \includeannex[page-style=empty]{a.pdf}{Plain}
+\end{document}
+"""
+SHOWCASE_TEX = r"""\documentclass[a4paper,11pt]{article}
+\usepackage{pdfannex-docstore}
+\pdfannexsetup{
+    heading=Annexes,
+    layout=footer-safe,
+    page-style=plain
+}
+\begin{document}
+Body.
+\includeannex[label=one]{a1.pdf}{First}
+\includeannex[label=three,layout=footer-safe]{a3.pdf}{Third}
+\includeannex[layout=framed]{a1.pdf}{Framed}
+\listofannexes
+\section{Project summary}
+The local appendix is \annexref{local} on page \annexpageref{local}.
+The current project memo is \annexref{memo} on page \annexpageref{memo}.
+\includeannex[label=local]{local.pdf}{Locally supplied appendix}
+\includedoc[label=memo]{memo}{Project memo from the docstore}
 \end{document}
 """
 
@@ -77,6 +105,12 @@ class AdapterPackage(unittest.TestCase):
                 shutil.copytree(source, target, ignore=ignore)
             else:
                 shutil.copy2(source, target)
+        sidecar_scripts = cls.project.parent / "scripts"
+        sidecar_scripts.mkdir()
+        shutil.copy2(
+            CORE / "scripts/install-texmfhome-tds.sh",
+            sidecar_scripts / "install-texmfhome-tds.sh",
+        )
         result = run(["make", "package"], cls.project, os.environ.copy(), check=False)
         if result.returncode:
             raise RuntimeError(result.stdout + result.stderr)
@@ -215,11 +249,164 @@ class AdapterPackage(unittest.TestCase):
                     "pdfannex://docstore/memo?rev=2",
                 )
                 self.assertIn("pdfannex://file/a.pdf", lock["sources"])
+
+                if CAN_LATEXMK_TEST:
+                    automated_projects = []
+                    rc = run(
+                        ["kpsewhich", "-format=texmfscripts", "pdfannex_latexmkrc"],
+                        work,
+                        env,
+                    ).stdout.strip()
+                    self.assertTrue(rc, "installed latexmk integration file not found")
+                    latexmkrc = (
+                        "my $pdfannex_rc = `kpsewhich -format=texmfscripts "
+                        "pdfannex_latexmkrc`;\n"
+                        "$pdfannex_rc =~ s/\\r?\\n\\z//;\n"
+                        "die \"pdfannex latexmk integration not found\\n\" "
+                        "unless $pdfannex_rc && -f $pdfannex_rc;\n"
+                        "require $pdfannex_rc;\n"
+                    )
+                    for flag, engine in LATEXMK_TEST_ENGINES:
+                        automated = work / f"automated-{engine}"
+                        automated.mkdir()
+                        automated_projects.append((flag, automated))
+                        for name, text in (
+                            ("a1", "FIRSTANNEX"),
+                            ("a3", "THIRDANNEX"),
+                            ("local", "LOCALANNEX"),
+                        ):
+                            make_pdf(automated, name, text, env)
+                        (automated / ".latexmkrc").write_text(latexmkrc)
+                        (automated / "host.tex").write_text(SHOWCASE_TEX)
+                        built = run(
+                            [
+                                "latexmk",
+                                flag,
+                                "-interaction=nonstopmode",
+                                "-halt-on-error",
+                                "host.tex",
+                            ],
+                            automated,
+                            env,
+                            check=False,
+                        )
+                        self.assertEqual(
+                            built.returncode, 0, built.stdout + built.stderr
+                        )
+                        self.assertIn("Run number 2", built.stdout)
+                        self.assertTrue((automated / "pdfannex.lock").is_file())
+                        prepared = run(
+                            [str(bindir / "pdfannex"), "verify", "host.tex"],
+                            automated,
+                            env,
+                        )
+                        self.assertIn("pdfannex: verify ok", prepared.stdout)
+                        text = run(
+                            ["pdftotext", "host.pdf", "-"], automated, env
+                        ).stdout
+                        self.assertIn("LATEST", text)
+                        for expected in (
+                            "FIRSTANNEX",
+                            "THIRDANNEX",
+                            "LOCALANNEX",
+                            "First",
+                            "Third",
+                            "Framed",
+                            "Locally supplied appendix",
+                            "Project memo from the docstore",
+                        ):
+                            self.assertIn(expected, text)
+                        self.assertRegex(
+                            text,
+                            r"The local appendix is\s+Annex 4 on page \d+\.",
+                        )
+                        self.assertRegex(
+                            text,
+                            r"The current project memo is\s+Annex 5 on page \d+\.",
+                        )
+
+                    broken = work / "broken"
+                    broken.mkdir()
+                    (broken / ".latexmkrc").write_text(latexmkrc)
+                    (broken / "missing.tex").write_text(
+                        r"""\documentclass{article}
+\usepackage{pdfannex-docstore}
+\begin{document}
+\includedoc{missing}{Missing}
+\end{document}
+"""
+                    )
+                    failed = run(
+                        [
+                            "latexmk",
+                            "-pdf",
+                            "-interaction=nonstopmode",
+                            "-halt-on-error",
+                            "missing.tex",
+                        ],
+                        broken,
+                        env,
+                        check=False,
+                    )
+                    self.assertNotEqual(failed.returncode, 0)
+                    self.assertIn("resource-not-found", failed.stdout + failed.stderr)
             finally:
                 server.stop()
 
             shutil.rmtree(work / "store")
             (work / "a.pdf").unlink()
+            if CAN_LATEXMK_TEST:
+                for flag, automated in automated_projects:
+                    for name in ("a1.pdf", "a3.pdf", "local.pdf"):
+                        (automated / name).unlink()
+                    for suffix in (
+                        ".aux",
+                        ".fdb_latexmk",
+                        ".fls",
+                        ".log",
+                        ".out",
+                        ".pdf",
+                    ):
+                        (automated / f"host{suffix}").unlink(missing_ok=True)
+                    offline = run(
+                        [
+                            "latexmk",
+                            flag,
+                            "-interaction=nonstopmode",
+                            "-halt-on-error",
+                            "host.tex",
+                        ],
+                        automated,
+                        env,
+                        check=False,
+                    )
+                    self.assertEqual(
+                        offline.returncode, 0, offline.stdout + offline.stderr
+                    )
+                    text = run(
+                        ["pdftotext", "host.pdf", "-"], automated, env
+                    ).stdout
+                    self.assertIn("LATEST", text)
+                    for expected in (
+                        "FIRSTANNEX",
+                        "THIRDANNEX",
+                        "LOCALANNEX",
+                        "First",
+                        "Third",
+                        "Framed",
+                        "Locally supplied appendix",
+                        "Project memo from the docstore",
+                    ):
+                        self.assertIn(expected, text)
+                    self.assertRegex(
+                        text,
+                        r"The local appendix is\s+Annex 4 on page \d+\.",
+                    )
+                    self.assertRegex(
+                        text,
+                        r"The current project memo is\s+Annex 5 on page \d+\.",
+                    )
+
             (work / "host.aux").unlink(missing_ok=True)
             (work / "host.pdf").unlink(missing_ok=True)
             run(["pdflatex", "-interaction=nonstopmode", "-halt-on-error", "host.tex"], work, env)

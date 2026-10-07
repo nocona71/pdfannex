@@ -19,11 +19,31 @@ sys.path.insert(0, str(ROOT / "adapter-example"))
 from docstore_server import DocstoreServer  # noqa: E402
 
 PDF_SOURCE = r"\documentclass{article}\pagestyle{empty}\begin{document}%s\end{document}"
-HOST_SOURCE = r"""\documentclass{article}\usepackage{pdfannex-docstore}
+HOST_SOURCE = r"""\documentclass[a4paper,11pt]{article}
+\usepackage{pdfannex-docstore}
+\pdfannexsetup{
+  heading=Annexes,
+  layout=footer-safe,
+  page-style=plain
+}
 \begin{document}
-\includedoc[page-style=empty]{memo}{Memo}
-\includeannex[page-style=empty]{plain.pdf}{Plain}
+Body.
+\includeannex[label=one]{a1.pdf}{First}
+\includeannex[label=three,layout=footer-safe]{a3.pdf}{Third}
+\includeannex[layout=framed]{a1.pdf}{Framed}
+\listofannexes
+\section{Project summary}
+The local appendix is \annexref{local} on page \annexpageref{local}.
+The current project memo is \annexref{memo} on page \annexpageref{memo}.
+\includeannex[label=local]{local.pdf}{Locally supplied appendix}
+\includedoc[label=memo]{memo}{Project memo from the docstore}
 \end{document}
+"""
+LATEXMKRC = r"""my $pdfannex_rc = `kpsewhich -format=texmfscripts pdfannex_latexmkrc`;
+$pdfannex_rc =~ s/\r?\n\z//;
+die "pdfannex latexmk integration not found\n"
+    unless $pdfannex_rc && -f $pdfannex_rc;
+require $pdfannex_rc;
 """
 
 
@@ -162,6 +182,17 @@ def check_pdf_text(work, pdf_name, expected, env):
             raise RuntimeError(f"PDF output is missing {token!r}")
 
 
+def enable_latexmk(work, env):
+    (work / ".latexmkrc").write_text(LATEXMKRC, encoding="utf-8")
+    result = run(
+        ["kpsewhich", "-format=texmfscripts", "pdfannex_latexmkrc"],
+        work,
+        env,
+    )
+    if not result.stdout.strip():
+        raise RuntimeError("pdfannex_latexmkrc is missing from the installed TDS tree")
+
+
 def test_core(tds_archive):
     files = tds_files(tds_archive)
     with tempfile.TemporaryDirectory() as temporary:
@@ -191,15 +222,62 @@ def test_core(tds_archive):
         if style != str(usertree / "tex/latex/pdfannex/pdfannex.sty"):
             raise RuntimeError(f"pdfannex.sty resolved outside the test user tree: {style}")
 
+        bindir = work / "bin"
+        bindir.mkdir()
+        cli = run(
+            ["kpsewhich", "-format=texmfscripts", "pdfannex"], work, env
+        ).stdout.strip()
+        if not cli:
+            raise RuntimeError("installed pdfannex CLI is missing from the TeX scripts tree")
+        (bindir / "pdfannex").symlink_to(cli)
+        env["PATH"] = f"{bindir}:{env['PATH']}"
+
         make_pdf(work, "annex", "COREFILEANNEX", env)
         (work / "document.tex").write_text(
-            r"\documentclass{article}\usepackage{pdfannex}"
-            r"\begin{document}\includeannex[page-style=empty]{annex.pdf}{Annex}"
-            r"\end{document}",
+            r"""\documentclass{article}
+\usepackage{pdfannex}
+\begin{document}
+See \annexref{core}.
+\listofannexes
+\includeannex[label=core]{annex.pdf}{Core annex}
+\end{document}
+""",
             encoding="utf-8",
         )
-        run(["pdflatex", "-interaction=nonstopmode", "-halt-on-error", "document.tex"],
-            work, env)
+        enable_latexmk(work, env)
+        build = run(
+            [
+                "latexmk",
+                "-pdf",
+                "-interaction=nonstopmode",
+                "-halt-on-error",
+                "document.tex",
+            ],
+            work,
+            env,
+        )
+        if "Run number 2" not in build.stdout:
+            raise RuntimeError("latexmk did not rerun the core build after request preparation")
+        check_pdf_text(
+            work,
+            "document.pdf",
+            ("COREFILEANNEX", "Annex 1: Core annex", "See Annex 1."),
+            env,
+        )
+        run([str(bindir / "pdfannex"), "verify", "document.tex"], work, env)
+        second_build = run(
+            [
+                "latexmk",
+                "-pdf",
+                "-interaction=nonstopmode",
+                "-halt-on-error",
+                "document.tex",
+            ],
+            work,
+            env,
+        )
+        if "Run number" in second_build.stdout:
+            raise RuntimeError("the converged core latexmk build unexpectedly reran")
         check_pdf_text(work, "document.pdf", ("COREFILEANNEX",), env)
 
 
@@ -262,33 +340,114 @@ def test_adapter(core_archive, adapter_archive):
         (work / "rev1.pdf").rename(store / "1.pdf")
         make_pdf(work, "rev2", "DOCSTOREANNEX", env)
         (work / "rev2.pdf").rename(store / "2.pdf")
-        make_pdf(work, "plain", "PLAINANNEX", env)
+        make_pdf(work, "a1", "FIRSTANNEX", env)
+        make_pdf(work, "a3", "THIRDANNEX", env)
+        make_pdf(work, "local", "LOCALANNEX", env)
         (work / "host.tex").write_text(HOST_SOURCE, encoding="utf-8")
 
         server = DocstoreServer(work / "store", "test-token").start()
         env["PDFANNEX_DOCSTORE_URL"] = server.url
         try:
-            run([str(bindir / "pdfannex"), "init"], work, env)
-            run(["pdflatex", "-interaction=nonstopmode", "host.tex"], work, env, check=False)
-            run([str(bindir / "pdfannex"), "prepare", "host.tex"], work, env)
+            enable_latexmk(work, env)
+            first_build = run(
+                [
+                    "latexmk",
+                    "-lualatex",
+                    "-interaction=nonstopmode",
+                    "-halt-on-error",
+                    "host.tex",
+                ],
+                work,
+                env,
+            )
+            if "Run number 2" not in first_build.stdout:
+                raise RuntimeError("latexmk did not rerun the adapter build after preparation")
             lock = json.loads((work / "pdfannex.lock").read_text(encoding="utf-8"))
             if lock["sources"]["pdfannex://docstore/memo"]["resolved"] != (
                 "pdfannex://docstore/memo?rev=2"
             ):
                 raise RuntimeError("docstore source did not lock the latest revision")
-            if "pdfannex://file/plain.pdf" not in lock["sources"]:
-                raise RuntimeError("plain file source was not locked")
+            for name in ("a1.pdf", "a3.pdf", "local.pdf"):
+                if f"pdfannex://file/{name}" not in lock["sources"]:
+                    raise RuntimeError(f"plain file source was not locked: {name}")
+            run([str(bindir / "pdfannex"), "verify", "host.tex"], work, env)
+            check_pdf_text(
+                work,
+                "host.pdf",
+                (
+                    "FIRSTANNEX",
+                    "THIRDANNEX",
+                    "LOCALANNEX",
+                    "DOCSTOREANNEX",
+                    "First",
+                    "Third",
+                    "Framed",
+                    "Locally supplied appendix",
+                    "Project memo from the docstore",
+                ),
+                env,
+            )
+            text = run(["pdftotext", "host.pdf", "-"], work, env).stdout
+            if not re.search(r"The local appendix is\s+Annex 4 on page \d+\.", text):
+                raise RuntimeError("local annex reference did not converge")
+            if not re.search(r"The current project memo is\s+Annex 5 on page \d+\.", text):
+                raise RuntimeError("docstore annex reference did not converge")
+            second_build = run(
+                [
+                    "latexmk",
+                    "-lualatex",
+                    "-interaction=nonstopmode",
+                    "-halt-on-error",
+                    "host.tex",
+                ],
+                work,
+                env,
+            )
+            if "Run number" in second_build.stdout:
+                raise RuntimeError("the converged adapter latexmk build unexpectedly reran")
         finally:
             server.stop()
 
         shutil.rmtree(work / "store")
-        (work / "plain.pdf").unlink()
-        (work / "host.aux").unlink(missing_ok=True)
-        (work / "host.pdf").unlink(missing_ok=True)
-        run(["pdflatex", "-interaction=nonstopmode", "-halt-on-error", "host.tex"], work, env)
+        for filename in ("a1.pdf", "a3.pdf", "local.pdf"):
+            (work / filename).unlink()
+        for suffix in (
+            ".aux",
+            ".fdb_latexmk",
+            ".fls",
+            ".log",
+            ".out",
+            ".pdf",
+            ".toc",
+        ):
+            (work / f"host{suffix}").unlink(missing_ok=True)
+        run(
+            [
+                "latexmk",
+                "-lualatex",
+                "-interaction=nonstopmode",
+                "-halt-on-error",
+                "host.tex",
+            ],
+            work,
+            env,
+        )
         run([str(bindir / "pdfannex"), "verify", "host.tex"], work, env)
         check_pdf_text(
-            work, "host.pdf", ("DOCSTOREANNEX", "PLAINANNEX"), env
+            work,
+            "host.pdf",
+            (
+                "FIRSTANNEX",
+                "THIRDANNEX",
+                "LOCALANNEX",
+                "DOCSTOREANNEX",
+                "First",
+                "Third",
+                "Framed",
+                "Locally supplied appendix",
+                "Project memo from the docstore",
+            ),
+            env,
         )
 
 

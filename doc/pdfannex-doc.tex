@@ -66,12 +66,29 @@ pdfannex update document.tex
 pdfannex verify document.tex
 \end{verbatim}
 
-Run \texttt{init} once in the project directory. This creates
-\texttt{pdfannex.lock}, which opts in to recording requests. Build once before
-\texttt{prepare} so the package can record each annex source. Do not use
+For the explicit CLI workflow, run \texttt{init} once in the project
+directory. This creates \texttt{pdfannex.lock}, which opts in to recording
+requests. Build once before \texttt{prepare} so the package can record each
+annex source. Without the optional \texttt{latexmk} integration, do not use
 \texttt{-halt-on-error} for that first build when the document contains
-\texttt{pdfannex://} sources: their unresolved-source errors would stop the run
-before later requests are recorded.
+\texttt{pdfannex://} sources: their unresolved-source errors would stop the
+run before later requests are recorded.
+
+An optional project-local \texttt{latexmk} integration automates this
+bootstrap. Add the following to \texttt{.latexmkrc}:
+
+\begin{verbatim}
+my $pdfannex_rc = `kpsewhich -format=texmfscripts pdfannex_latexmkrc`;
+$pdfannex_rc =~ s/\r?\n\z//;
+die "pdfannex latexmk integration not found\n"
+    unless $pdfannex_rc && -f $pdfannex_rc;
+require $pdfannex_rc;
+\end{verbatim}
+
+With it enabled, use \texttt{latexmk document.tex}. The helper initializes
+request recording, prepares new sources after the discovery pass, and lets
+\texttt{latexmk} rerun LaTeX. Preparation failures fail the build; updates to
+already-locked sources remain explicit.
 
 \texttt{prepare} resolves and locks new sources; \texttt{update} explicitly
 re-resolves them; \texttt{status} checks resolver-backed sources for changes;

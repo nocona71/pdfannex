@@ -10,6 +10,7 @@ done
 
 python3 testfiles/test_devcontainer.py
 python3 testfiles/test_packaging.py
+python3 testfiles/test_tds_installer.py
 python3 testfiles/test_geometry.py
 python3 testfiles/test_pagination.py
 python3 testfiles/test_nup.py
@@ -25,4 +26,4 @@ for t in geometry pagination nup dod; do
   PDFANNEX_TEST_LOCKED=1 python3 "testfiles/test_$t.py"
 done
 ./scripts/smoke-tex
-shellcheck scripts/e2e-ctan
+shellcheck scripts/e2e-ctan scripts/install-texmfhome-tds.sh
