@@ -29,6 +29,13 @@ jobs:
 
       - name: Install TeX tooling
         run: |
+          sudo sed -i \
+            's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' \
+            /etc/apt/apt-mirrors.txt
+          if grep -qF 'azure.archive.ubuntu.com' /etc/apt/apt-mirrors.txt; then
+            echo "::error::The Ubuntu mirror list still contains the stalled Azure mirror."
+            exit 1
+          fi
           apt_options=(
             -o Acquire::Retries=1
             -o Acquire::http::Timeout=10
