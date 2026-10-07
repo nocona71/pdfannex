@@ -130,6 +130,7 @@ pdftotext document.pdf - | grep -qF "LOCKEDANNEX" \
 
 step "build the shipped manual from source"
 mkdir "$work/manual" && cp "$pkg/pdfannex-doc.tex" "$work/manual/"
+cp -R "$pkg/examples" "$work/manual/"
 (cd "$work/manual" && latexmk -pdf -interaction=nonstopmode -halt-on-error pdfannex-doc.tex >/dev/null) \
   || fail "manual does not build from the archive"
 
