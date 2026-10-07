@@ -43,3 +43,4 @@ Add a new file whenever a design or process decision is made. Never silently cha
 | 0036 | [Use larger manual PDF previews](0036-larger-manual-pdf-previews.md) | accepted |
 | 0037 | [Submit CTAN releases after tagged release checks](0037-submit-ctan-after-release-checks.md) | accepted |
 | 0038 | [Review manual CTAN submissions before upload](0038-review-manual-ctan-submissions.md) | accepted |
+| 0039 | [Close issue #1 for per-file n-up](0039-close-issue-1-per-file-nup.md) | accepted |
