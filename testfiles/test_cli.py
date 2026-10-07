@@ -27,7 +27,15 @@ def sh(cmd, cwd, check=True, env=None, **kw):
     run_env.update({"HOME": str(cwd), "TEXINPUTS": f"{ROOT / 'tex'}{os.pathsep}"})
     if env:
         run_env.update(env)
-    return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, check=check, env=run_env, **kw)
+    try:
+        return subprocess.run(
+            cmd, cwd=cwd, capture_output=True, text=True, check=check, env=run_env, **kw
+        )
+    except subprocess.CalledProcessError as exc:
+        raise AssertionError(
+            f"command failed ({exc.returncode}): {cmd!r}\n"
+            f"stdout:\n{exc.stdout}\nstderr:\n{exc.stderr}"
+        ) from exc
 
 
 def pdf(cwd, name, text):

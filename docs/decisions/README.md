@@ -27,3 +27,4 @@ Add a new file whenever a design or process decision is made. Never silently cha
 | 0020 | [TeX Live package-manager end-to-end tests](0020-texlive-package-manager-e2e.md) | accepted |
 | 0021 | [Use the host Docker daemon from the devcontainer](0021-devcontainer-docker-access.md) | accepted |
 | 0022 | [Cross-platform CLI resolver execution](0022-cross-platform-cli-resolvers.md) | accepted |
+| 0023 | [Quote Windows child-process arguments](0023-windows-child-process-arguments.md) | accepted |

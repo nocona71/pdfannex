@@ -267,8 +267,39 @@ local function quote_arg(s)
   return "'" .. s:gsub("'", "'\\''") .. "'"
 end
 
+local function quote_windows_arg(s)
+  -- ProcessStartInfo.Arguments is parsed again by the target Windows process.
+  local quoted, backslashes = { '"' }, 0
+  for i = 1, #s do
+    local char = s:sub(i, i)
+    if char == "\\" then
+      backslashes = backslashes + 1
+    else
+      if char == '"' then
+        quoted[#quoted + 1] = string.rep("\\", backslashes * 2 + 1)
+      else
+        quoted[#quoted + 1] = string.rep("\\", backslashes)
+      end
+      quoted[#quoted + 1] = char
+      backslashes = 0
+    end
+  end
+  quoted[#quoted + 1] = string.rep("\\", backslashes * 2)
+  quoted[#quoted + 1] = '"'
+  return table.concat(quoted)
+end
+
 local function run_windows_process(command, input, output)
-  local request = M.json_encode({ command = command, input = input, output = output })
+  local args = {}
+  for i = 2, #command do
+    args[#args + 1] = quote_windows_arg(command[i])
+  end
+  local request = M.json_encode({
+    command = command[1],
+    arguments = table.concat(args, " "),
+    input = input,
+    output = output,
+  })
   local hex = request:gsub(".", function(c) return string.format("%02x", c:byte()) end)
   local bootstrap = "$h='" .. hex .. "'"
     .. ";$b=New-Object byte[] ([int]($h.Length/2))"
@@ -276,12 +307,11 @@ local function run_windows_process(command, input, output)
     .. ";$spec=ConvertFrom-Json ([Text.Encoding]::UTF8.GetString($b))"
     .. ";try{$ErrorActionPreference='Stop'"
     .. ";$psi=New-Object System.Diagnostics.ProcessStartInfo"
-    .. ";$psi.FileName=[string]$spec.command[0]"
+    .. ";$psi.FileName=[string]$spec.command"
     .. ";$psi.UseShellExecute=$false"
     .. ";$psi.RedirectStandardInput=($null -ne $spec.input)"
     .. ";$psi.RedirectStandardOutput=($null -ne $spec.output)"
-    .. ";$psi.Arguments=[string]::Join(' ',@($spec.command | Select-Object -Skip 1"
-    .. " | ForEach-Object { [string][char]34 + $_ + [string][char]34 }))"
+    .. ";$psi.Arguments=[string]$spec.arguments"
     .. ";$p=New-Object System.Diagnostics.Process"
     .. ";$p.StartInfo=$psi"
     .. ";[void]$p.Start();$copy=$null"
