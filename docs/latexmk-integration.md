@@ -39,6 +39,11 @@ a warning and are omitted temporarily; the successful final run includes the
 resolved annexes. Without this project-local integration, unresolved external
 sources remain errors.
 
+The integration also supports a latexmk output directory, such as
+`$out_dir = 'build';`. It stages the generated request file from that directory
+into the project directory before calling the CLI, where the lock and
+resolution map are stored.
+
 Already-locked builds use the project-local artifacts and do not contact
 resolvers. Upstream changes are never accepted automatically; use
 `pdfannex update document.tex` when you intend to advance a source. The
