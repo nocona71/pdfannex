@@ -217,6 +217,13 @@ class CliProcess(unittest.TestCase):
         self.assertIn("1 source(s) locked", run.stdout)
         self.assertTrue((self.project / "pdfannex.lock").exists())
 
+    def test_missing_resolver_reports_on_stderr(self):
+        write_requests(self.project, "pdfannex://nowhere/1")
+        run = cli(self.project, "prepare", "host.tex", check=False)
+        self.assertNotEqual(run.returncode, 0)
+        self.assertIn("no resolver 'pdfannex-resolver-nowhere'", run.stderr)
+        self.assertEqual(run.stdout, "")
+
     @unittest.skipUnless(os.name == "nt", "Windows drive paths only")
     def test_drive_path_is_not_a_project_relative_file(self):
         write_requests(self.project, "C:/Windows/win.ini")

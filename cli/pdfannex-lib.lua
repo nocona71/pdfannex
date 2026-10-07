@@ -303,6 +303,7 @@ function M.find_resolver(name)
     end
   end
   if kpse and kpse.find_file then
+    kpse.set_program_name("latex")
     for _, suffix in ipairs({ "", ".lua" }) do
       local found = kpse.find_file(name .. suffix, "texmfscripts")
       if found and lfs.attributes(found, "mode") == "file" then return found end
