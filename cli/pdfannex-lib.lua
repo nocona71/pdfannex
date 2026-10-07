@@ -4,6 +4,10 @@
 local M = {}
 local windows = package.config:sub(1, 1) == "\\"
 
+local function powershell_quote(s)
+  return "'" .. s:gsub("'", "''") .. "'"
+end
+
 ---------------------------------------------------------------- JSON
 local escapes = { ['"'] = '\\"', ['\\'] = '\\\\', ['\b'] = '\\b', ['\f'] = '\\f',
                   ['\n'] = '\\n', ['\r'] = '\\r', ['\t'] = '\\t' }
@@ -188,9 +192,11 @@ function M.atomic_write(path, data)
   if not ok then return nil, err end
   local renamed, rename_err = os.rename(tmp, path)
   if renamed or not windows or not M.exists(path) then return renamed, rename_err end
-  local output = os.tmpname()
-  local replaced, code = M.run_process({ "move", "/Y", tmp, path }, nil, output)
-  os.remove(output)
+  local command = "[IO.File]::Replace(" .. powershell_quote(tmp) .. ","
+    .. powershell_quote(path) .. ",$null)"
+  local replaced, code = M.run_process({
+    "powershell.exe", "-NoProfile", "-NonInteractive", "-Command", command,
+  })
   if replaced then return true end
   return nil, tostring(rename_err) .. "; replacement failed with status " .. tostring(code)
 end
@@ -239,14 +245,43 @@ end
 
 ---------------------------------------------------------------- processes
 local function quote_arg(s)
-  if windows then return '"' .. s:gsub('"', '\\"') .. '"' end
   return "'" .. s:gsub("'", "'\\''") .. "'"
 end
 
+local function run_windows_process(command, input, output)
+  local request = M.json_encode({ command = command, input = input, output = output })
+  local hex = request:gsub(".", function(c) return string.format("%02x", c:byte()) end)
+  local bootstrap = "$h='" .. hex .. "'"
+    .. ";$b=New-Object byte[] ([int]($h.Length/2))"
+    .. ";for($i=0;$i -lt $h.Length;$i+=2){$b[$i/2]=[Convert]::ToByte($h.Substring($i,2),16)}"
+    .. ";$spec=ConvertFrom-Json ([Text.Encoding]::UTF8.GetString($b))"
+    .. ";try{$ErrorActionPreference='Stop'"
+    .. ";$psi=New-Object System.Diagnostics.ProcessStartInfo"
+    .. ";$psi.FileName=[string]$spec.command[0]"
+    .. ";$psi.UseShellExecute=$false"
+    .. ";$psi.RedirectStandardInput=($null -ne $spec.input)"
+    .. ";$psi.RedirectStandardOutput=($null -ne $spec.output)"
+    .. ";$psi.Arguments=[string]::Join(' ',@($spec.command | Select-Object -Skip 1"
+    .. " | ForEach-Object { [string][char]34 + $_ + [string][char]34 }))"
+    .. ";$p=New-Object System.Diagnostics.Process"
+    .. ";$p.StartInfo=$psi"
+    .. ";[void]$p.Start();$copy=$null"
+    .. ";if($null -ne $spec.output){$out=[IO.File]::Create([string]$spec.output)"
+    .. ";$copy=$p.StandardOutput.BaseStream.CopyToAsync($out)}"
+    .. ";if($null -ne $spec.input){$infile=[IO.File]::OpenRead([string]$spec.input)"
+    .. ";$infile.CopyTo($p.StandardInput.BaseStream);$infile.Dispose();$p.StandardInput.Close()}"
+    .. ";$p.WaitForExit();if($null -ne $copy){$copy.Wait();$out.Dispose()}"
+    .. ";exit $p.ExitCode}catch{[Console]::Error.WriteLine($_);exit 1}"
+  local ok, why, code = os.execute(
+    'powershell.exe -NoLogo -NoProfile -NonInteractive -Command "' .. bootstrap .. '"')
+  return ok == true or ok == 0, code or why
+end
+
 function M.run_process(command, input, output)
+  if windows then return run_windows_process(command, input, output) end
   local quoted = {}
   for i, arg in ipairs(command) do
-    quoted[i] = windows and i == 1 and arg:match("^[%w_.%-]+$") and arg or quote_arg(arg)
+    quoted[i] = quote_arg(arg)
   end
   local cmd = table.concat(quoted, " ")
   if input then cmd = cmd .. " < " .. quote_arg(input) end
@@ -260,9 +295,10 @@ function M.find_resolver(name)
   local path = os.getenv("PATH") or ""
   for dir in (path .. path_sep):gmatch("(.-)" .. path_sep) do
     if dir == "" then dir = "." end
+    local separator = "/"
+    if dir:sub(-1) == "/" or dir:sub(-1) == "\\" then separator = "" end
     for _, suffix in ipairs({ "", ".lua" }) do
-      local candidate = dir .. (dir:sub(-1):match("[/\\]") and "" or "/")
-        .. name .. suffix
+      local candidate = dir .. separator .. name .. suffix
       if lfs.attributes(candidate, "mode") == "file" then return candidate end
     end
   end

@@ -225,7 +225,7 @@ class CliProcess(unittest.TestCase):
         self.assertIn("invalid-source", run.stderr)
 
     def test_resolver_script_on_path_runs_through_texlua(self):
-        resolver_dir = self.d / "resolver scripts"
+        resolver_dir = self.d / "resolver %PATH% scripts"
         resolver_dir.mkdir()
         resolver = resolver_dir / "pdfannex-resolver-mock"
         resolver.write_text(
