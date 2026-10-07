@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/nocona71/pdfannex/compare/pdfannex-v0.5.0...pdfannex-v0.5.1) (2026-10-07)
+
+
+### Bug Fixes
+
+* resolve annexes with latexmk output directories ([#24](https://github.com/nocona71/pdfannex/issues/24)) ([8f0de5f](https://github.com/nocona71/pdfannex/commit/8f0de5fbe5863b22eadeda65efe287f8cc39cdcb))
+
 ## [0.5.0](https://github.com/nocona71/pdfannex/compare/pdfannex-v0.4.0...pdfannex-v0.5.0) (2026-10-07)
 
 
