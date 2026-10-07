@@ -26,6 +26,21 @@ under **Settings → Environments**. Without a required reviewer, GitHub does
 not pause the submission job for review. Automatic Release Please submissions
 use a separate, unprotected environment and are not paused.
 
+## Initial CTAN listing
+
+The first CTAN submission must use CTAN's [web upload form](https://ctan.org/upload).
+The Ubuntu 24.04 runner's packaged `l3build` has a first-upload bug: when the
+package is not yet listed, it can report success without uploading. The
+upstream fix is not included in Ubuntu's TeX Live package.
+
+Run the manual workflow to build, test, and review the release. Download the
+`pdfannex-ctan-archive` and `pdfannex-ctan-announcement` artifacts from that
+run, then use the archive, announcement, and metadata shown in the preview
+when submitting through CTAN's form. Wait until
+[the package page](https://ctan.org/pkg/pdfannex) is published before using
+the workflow for automated updates. The submission job checks that page and
+fails explicitly while the package is not listed.
+
 ## Manual release flow
 
 1. In **Actions → Build and submit CTAN release**, select the `main` branch.

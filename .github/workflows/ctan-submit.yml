@@ -249,6 +249,19 @@ jobs:
           cp "$archive" pdfannex-ctan.zip
           echo "VERSION=$VERSION" >>"$GITHUB_ENV"
 
+      - name: Require an existing CTAN listing for automated updates
+        run: |
+          if ! status="$(curl --silent --show-error --location --max-time 15 \
+            --output /dev/null --write-out '%{http_code}' \
+            https://ctan.org/pkg/pdfannex)"; then
+            echo "::error::Could not check whether pdfannex is listed on CTAN."
+            exit 1
+          fi
+          if [[ "$status" != "200" ]]; then
+            echo "::error title=Initial CTAN submission required::CTAN package page returned HTTP $status. Submit the reviewed archive at https://ctan.org/upload; automated l3build uploads are only for packages already listed on CTAN."
+            exit 1
+          fi
+
       - name: Submit package to CTAN
         env:
           CTAN_EMAIL: ${{ secrets.CTAN_EMAIL }}
