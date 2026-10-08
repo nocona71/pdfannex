@@ -20,8 +20,8 @@ end
 
 dofile("build.lua")
 local metadata = uploadconfig
-if not metadata or not metadata.email or metadata.email == "" then
-  fail("Configure the CTAN_EMAIL Actions secret before submission.")
+if not metadata then
+  fail("CTAN upload metadata is missing.")
 end
 
 local required_fields = {
@@ -78,7 +78,11 @@ io.write("- **Package:** `" .. escape_html(metadata.pkg) .. "`\n")
 io.write("- **Version:** `" .. escape_html(version) .. "`\n")
 io.write("- **Author:** " .. escape_html(metadata.author) .. "\n")
 io.write("- **Uploader:** " .. escape_html(metadata.uploader) .. "\n")
-io.write("- **Uploader email:** configured (redacted)\n")
+io.write(
+  "- **Uploader email:** "
+    .. (metadata.email and metadata.email ~= "" and "configured (redacted)" or "not configured")
+    .. "\n"
+)
 io.write("- **CTAN path:** `" .. escape_html(metadata.ctanPath) .. "`\n")
 io.write("- **License:** " .. escape_html(license) .. "\n")
 io.write("- **Summary:** " .. escape_html(metadata.summary) .. "\n")

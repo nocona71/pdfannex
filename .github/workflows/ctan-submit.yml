@@ -1,23 +1,6 @@
 name: Build and submit CTAN release
 
 on:
-  release:
-    types: [published]
-  workflow_call:
-    inputs:
-      release_tag:
-        description: Published release tag to submit
-        required: true
-        type: string
-      announcement:
-        description: Optional CTAN announcement override
-        required: false
-        default: ""
-        type: string
-    secrets:
-      CTAN_EMAIL:
-        description: Email address for the CTAN uploader
-        required: false
   workflow_dispatch:
     inputs:
       release_tag:
@@ -25,6 +8,11 @@ on:
         required: false
         default: ""
         type: string
+      submit_to_ctan:
+        description: Submit with l3build (only if pdfannex is already listed on CTAN)
+        required: true
+        default: false
+        type: boolean
       announcement:
         description: Optional CTAN announcement override; blank uses release notes
         required: false
@@ -60,7 +48,7 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           WORKFLOW_EVENT: ${{ github.event_name }}
           WORKFLOW_REF: ${{ github.ref }}
-          RELEASE_TAG: ${{ inputs.release_tag || github.event.release.tag_name || '' }}
+          RELEASE_TAG: ${{ inputs.release_tag || '' }}
         run: |
           python3 .github/scripts/ctan_release_selection.py \
             --event "$WORKFLOW_EVENT" \
@@ -68,7 +56,7 @@ jobs:
             --tag "$RELEASE_TAG"
 
       - name: Check uploader email is configured
-        if: steps.resolve.outputs.run_pipeline == 'true'
+        if: steps.resolve.outputs.run_pipeline == 'true' && inputs.submit_to_ctan
         env:
           CTAN_EMAIL: ${{ secrets.CTAN_EMAIL }}
         run: |
@@ -78,7 +66,7 @@ jobs:
           fi
 
       - name: Require CTAN receipt check for manual dispatch
-        if: steps.resolve.outputs.run_pipeline == 'true' && github.event_name == 'workflow_dispatch'
+        if: steps.resolve.outputs.run_pipeline == 'true' && inputs.submit_to_ctan
         env:
           CONFIRM_NOT_RECEIVED: ${{ inputs.confirm_ctan_not_received }}
         run: |
@@ -184,11 +172,11 @@ jobs:
 
   submit:
     needs: [resolve-release, ctan-archive, ctan-e2e, prepare-review]
-    if: needs.resolve-release.outputs.run_pipeline == 'true'
+    if: needs.resolve-release.outputs.run_pipeline == 'true' && inputs.submit_to_ctan
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment:
-      name: ${{ github.event_name == 'workflow_dispatch' && 'ctan-manual-review' || 'ctan-automatic' }}
+      name: ctan-manual-review
     permissions:
       contents: read
     steps:
@@ -249,7 +237,7 @@ jobs:
           cp "$archive" pdfannex-ctan.zip
           echo "VERSION=$VERSION" >>"$GITHUB_ENV"
 
-      - name: Require an existing CTAN listing for automated updates
+      - name: Require an existing CTAN listing before upload
         run: |
           if ! status="$(curl --silent --show-error --location --max-time 15 \
             --output /dev/null --write-out '%{http_code}' \
