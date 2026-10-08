@@ -14,23 +14,9 @@ permissions:
 jobs:
   release-please:
     runs-on: ubuntu-24.04
-    outputs:
-      release_created: ${{ steps.release.outputs.release_created }}
-      tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
       - name: Create or update release PR
-        id: release
         uses: googleapis/release-please-action@v5
         with:
           config-file: .release-please-config.json
           manifest-file: .release-please-manifest.json
-
-  ctan-release:
-    needs: release-please
-    if: needs.release-please.outputs.release_created == 'true'
-    permissions:
-      contents: write
-    uses: ./.github/workflows/ctan-submit.yml
-    with:
-      release_tag: ${{ needs.release-please.outputs.tag_name }}
-    secrets: inherit

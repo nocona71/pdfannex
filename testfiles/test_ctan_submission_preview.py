@@ -49,11 +49,11 @@ class SubmissionPreviewTests(unittest.TestCase):
         self.assertNotIn("ctan-test@example.invalid", result.stdout)
         self.assertIn("Release &lt;b&gt;notes&lt;/b&gt;", result.stdout)
 
-    def test_preview_rejects_missing_email(self):
+    def test_preview_reports_missing_email_without_exposing_it(self):
         result = self.run_preview("Release notes", email=None)
 
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn("CTAN_EMAIL", result.stderr)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Uploader email:** not configured", result.stdout)
 
     def test_preview_rejects_empty_or_oversized_announcement(self):
         empty = self.run_preview("  \n")

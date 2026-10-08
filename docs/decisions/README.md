@@ -41,9 +41,10 @@ Add a new file whenever a design or process decision is made. Never silently cha
 | 0034 | [Preserve local PDF paths literally](0034-preserve-local-pdf-paths-literally.md) | accepted |
 | 0035 | [Track reproducible showcase PDF fixtures](0035-track-showcase-pdf-fixtures.md) | accepted |
 | 0036 | [Use larger manual PDF previews](0036-larger-manual-pdf-previews.md) | accepted |
-| 0037 | [Submit CTAN releases after tagged release checks](0037-submit-ctan-after-release-checks.md) | accepted |
+| 0037 | [Submit CTAN releases after tagged release checks](0037-submit-ctan-after-release-checks.md) | superseded by 0043 |
 | 0038 | [Review manual CTAN submissions before upload](0038-review-manual-ctan-submissions.md) | accepted |
 | 0039 | [Close issue #1 for per-file n-up](0039-close-issue-1-per-file-nup.md) | accepted |
 | 0040 | [Bound APT waits in GitHub Actions](0040-bound-apt-waits-in-github-actions.md) | accepted |
 | 0041 | [Prefer HTTPS Ubuntu archive on hosted runners](0041-prefer-https-ubuntu-archive.md) | accepted |
 | 0042 | [Use the CTAN form for initial package submission](0042-ctan-web-form-for-initial-submission.md) | accepted |
+| 0043 | [Make CTAN submission a manual release action](0043-manual-ctan-release-action.md) | accepted |
